@@ -159,6 +159,12 @@ impl Default for MenuItem {
     }
 }
 
+impl From<ContentItem> for MenuItem {
+    fn from(i: ContentItem) -> MenuItem {
+        MenuItem::Content(i)
+    }
+}
+
 impl fmt::Display for MenuItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

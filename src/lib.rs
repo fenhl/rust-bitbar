@@ -3,6 +3,10 @@ use std::{
     fmt,
     iter::FromIterator
 };
+use css_color_parser::{
+    Color,
+    ColorParseError
+};
 use url::Url;
 
 #[derive(Debug)]
@@ -10,6 +14,37 @@ pub enum Extra {
     Alternate(Box<ContentItem>), //TODO make sure alts don't have submenus
     Submenu(Menu)
 }
+
+pub trait IntoColor {
+    fn into_color(self) -> Result<Color, ColorParseError>;
+}
+
+impl IntoColor for &str {
+    fn into_color(self) -> Result<Color, ColorParseError> {
+        Ok(self.parse()?)
+    }
+}
+
+impl IntoColor for Color {
+    fn into_color(self) -> Result<Color, ColorParseError> {
+        Ok(self)
+    }
+}
+
+macro_rules! impl_into_color_for_css_color {
+    ($t:ty) => {
+        impl IntoColor for $t {
+            fn into_color(self) -> Result<Color, ColorParseError> {
+                Ok(self.to_string().parse()?)
+            }
+        }
+    };
+}
+
+impl_into_color_for_css_color!(css_colors::RGB);
+impl_into_color_for_css_color!(css_colors::RGBA);
+impl_into_color_for_css_color!(css_colors::HSL);
+impl_into_color_for_css_color!(css_colors::HSLA);
 
 #[derive(Debug)]
 pub struct Command {
@@ -28,6 +63,7 @@ pub struct ContentItem {
     pub text: String,
     pub extra: Option<Extra>,
     pub href: Option<Url>,
+    pub color: Option<Color>,
     pub font: Option<String>,
     pub command: Option<Command>,
     pub refresh: bool,
@@ -50,6 +86,11 @@ impl ContentItem {
     pub fn href(mut self, href: Url) -> Self {
         self.href = Some(href);
         self
+    }
+
+    pub fn color(mut self, color: impl IntoColor) -> Result<Self, ColorParseError> {
+        self.color = Some(color.into_color()?);
+        Ok(self)
     }
 
     pub fn font(mut self, font: impl ToString) -> Self {
@@ -96,6 +137,9 @@ impl ContentItem {
         if let Some(ref href) = self.href {
             rendered_params.insert("href".into(), href.to_string());
         }
+        if let Some(ref color) = self.color {
+            rendered_params.insert("color".into(), format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a));
+        }
         if let Some(ref font) = self.font {
             rendered_params.insert("font".into(), font.clone());
         }
@@ -112,6 +156,9 @@ impl ContentItem {
         }
         if is_alt {
             rendered_params.insert("alternate".into(), "true".into());
+        }
+        if let Some(ref img) = self.image {
+            rendered_params.insert(if img.is_template { "templateImage" } else { "image" }.into(), img.base64_data.clone());
         }
         if !rendered_params.is_empty() {
             write!(f, " |")?;

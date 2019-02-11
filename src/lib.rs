@@ -1,7 +1,9 @@
 use std::{
     collections::BTreeMap,
-    fmt
+    fmt,
+    iter::FromIterator
 };
+use url::Url;
 
 #[derive(Debug)]
 pub enum Extra {
@@ -19,17 +21,56 @@ pub struct Command {
 pub struct ContentItem {
     pub text: String,
     pub extra: Option<Extra>,
+    pub href: Option<Url>,
     pub font: Option<String>,
     pub command: Option<Command>,
     pub refresh: bool
 }
 
 impl ContentItem {
+    pub fn new(text: impl ToString) -> ContentItem {
+        ContentItem {
+            text: text.to_string(),
+            ..ContentItem::default()
+        }
+    }
+
+    pub fn href(&mut self, href: Url) -> &mut Self {
+        self.href = Some(href);
+        self
+    }
+
+    pub fn font(&mut self, font: impl ToString) -> &mut Self {
+        self.font = Some(font.to_string());
+        self
+    }
+
+    pub fn command(&mut self, cmd: impl Into<Command>) -> &mut Self {
+        self.command = Some(cmd.into());
+        self
+    }
+
+    pub fn refresh(&mut self) -> &mut Self {
+        self.refresh = true;
+        self
+    }
+
+    pub fn alt(&mut self, alt: impl Into<ContentItem>) -> &mut Self {
+        self.extra = Some(Extra::Alternate(Box::new(alt.into())));
+        self
+    }
+
     fn render(&self, f: &mut fmt::Formatter, is_alt: bool) -> fmt::Result {
         // main text
         write!(f, "{}", self.text)?; //TODO escape pipes
         // parameters
         let mut rendered_params = BTreeMap::default();
+        if let Some(ref href) = self.href {
+            rendered_params.insert("href".into(), href.to_string());
+        }
+        if let Some(ref font) = self.font {
+            rendered_params.insert("font".into(), font.clone());
+        }
         if let Some(ref cmd) = self.command {
             for (i, arg) in cmd.args.iter().enumerate() {
                 rendered_params.insert(if i == 0 { "bash".into() } else { format!("param{}", i) }, arg.clone());
@@ -40,9 +81,6 @@ impl ContentItem {
         }
         if self.refresh {
             rendered_params.insert("refresh".into(), "true".into());
-        }
-        if let Some(ref font) = self.font {
-            rendered_params.insert("font".into(), font.clone());
         }
         if is_alt {
             rendered_params.insert("alternate".into(), "true".into());
@@ -81,6 +119,12 @@ pub enum MenuItem {
     Sep
 }
 
+impl MenuItem {
+    pub fn new(text: impl fmt::Display) -> MenuItem {
+        MenuItem::Content(ContentItem::new(text))
+    }
+}
+
 impl Default for MenuItem {
     fn default() -> MenuItem {
         MenuItem::Content(ContentItem::default())
@@ -96,8 +140,14 @@ impl fmt::Display for MenuItem {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Menu(pub Vec<MenuItem>);
+
+impl<A: Into<MenuItem>> FromIterator<A> for Menu {
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Menu {
+        Menu(iter.into_iter().map(Into::into).collect())
+    }
+}
 
 /// This provides the main functionality of this crate: rendering a BitBar plugin.
 ///

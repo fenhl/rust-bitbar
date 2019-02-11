@@ -42,37 +42,37 @@ impl ContentItem {
         }
     }
 
-    pub fn sub(&mut self, items: impl IntoIterator<Item = MenuItem>) -> &mut Self {
+    pub fn sub(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
         self.extra = Some(Extra::Submenu(Menu::from_iter(items)));
         self
     }
 
-    pub fn href(&mut self, href: Url) -> &mut Self {
+    pub fn href(mut self, href: Url) -> Self {
         self.href = Some(href);
         self
     }
 
-    pub fn font(&mut self, font: impl ToString) -> &mut Self {
+    pub fn font(mut self, font: impl ToString) -> Self {
         self.font = Some(font.to_string());
         self
     }
 
-    pub fn command(&mut self, cmd: impl Into<Command>) -> &mut Self {
+    pub fn command(mut self, cmd: impl Into<Command>) -> Self {
         self.command = Some(cmd.into());
         self
     }
 
-    pub fn refresh(&mut self) -> &mut Self {
+    pub fn refresh(mut self) -> Self {
         self.refresh = true;
         self
     }
 
-    pub fn alt(&mut self, alt: impl Into<ContentItem>) -> &mut Self {
+    pub fn alt(mut self, alt: impl Into<ContentItem>) -> Self {
         self.extra = Some(Extra::Alternate(Box::new(alt.into())));
         self
     }
 
-    pub fn template_image(&mut self, img: impl ToString) -> &mut Self { //TODO support image types
+    pub fn template_image(mut self, img: impl ToString) -> Self { //TODO support image types
         self.image = Some(Image {
             base64_data: img.to_string(),
             is_template: true
@@ -80,7 +80,7 @@ impl ContentItem {
         self
     }
 
-    pub fn image(&mut self, img: impl ToString) -> &mut Self { //TODO support image types
+    pub fn image(mut self, img: impl ToString) -> Self { //TODO support image types
         self.image = Some(Image {
             base64_data: img.to_string(),
             is_template: false

@@ -17,6 +17,12 @@ pub struct Command {
     pub terminal: bool
 }
 
+#[derive(Debug)]
+pub struct Image {
+    pub base64_data: String,
+    pub is_template: bool
+}
+
 #[derive(Debug, Default)]
 pub struct ContentItem {
     pub text: String,
@@ -24,7 +30,8 @@ pub struct ContentItem {
     pub href: Option<Url>,
     pub font: Option<String>,
     pub command: Option<Command>,
-    pub refresh: bool
+    pub refresh: bool,
+    pub image: Option<Image>
 }
 
 impl ContentItem {
@@ -33,6 +40,11 @@ impl ContentItem {
             text: text.to_string(),
             ..ContentItem::default()
         }
+    }
+
+    pub fn sub(&mut self, items: impl IntoIterator<Item = MenuItem>) -> &mut Self {
+        self.extra = Some(Extra::Submenu(Menu::from_iter(items)));
+        self
     }
 
     pub fn href(&mut self, href: Url) -> &mut Self {
@@ -57,6 +69,22 @@ impl ContentItem {
 
     pub fn alt(&mut self, alt: impl Into<ContentItem>) -> &mut Self {
         self.extra = Some(Extra::Alternate(Box::new(alt.into())));
+        self
+    }
+
+    pub fn template_image(&mut self, img: impl ToString) -> &mut Self { //TODO support image types
+        self.image = Some(Image {
+            base64_data: img.to_string(),
+            is_template: true
+        });
+        self
+    }
+
+    pub fn image(&mut self, img: impl ToString) -> &mut Self { //TODO support image types
+        self.image = Some(Image {
+            base64_data: img.to_string(),
+            is_template: false
+        });
         self
     }
 

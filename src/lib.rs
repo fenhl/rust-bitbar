@@ -88,6 +88,7 @@ impl ContentItem {
         self
     }
 
+    /// Sets the menu item's text color. Alpha channel is ignored.
     pub fn color(mut self, color: impl IntoColor) -> Result<Self, ColorParseError> {
         self.color = Some(color.into_color()?);
         Ok(self)
@@ -138,7 +139,7 @@ impl ContentItem {
             rendered_params.insert("href".into(), href.to_string());
         }
         if let Some(ref color) = self.color {
-            rendered_params.insert("color".into(), format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a));
+            rendered_params.insert("color".into(), format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b));
         }
         if let Some(ref font) = self.font {
             rendered_params.insert("font".into(), font.clone());

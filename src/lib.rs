@@ -52,6 +52,16 @@ pub struct Command {
     pub terminal: bool
 }
 
+/// Converts an iterable of displayable values to a command argument vector. The `terminal` value will be `false`.
+impl<S: ToString, I: IntoIterator<Item = S>> From<I> for Command {
+    fn from(iterable: I) -> Command {
+        Command {
+            args: iterable.into_iter().map(|s| s.to_string()).collect(),
+            terminal: false
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Image {
     pub base64_data: String,
@@ -132,7 +142,7 @@ impl ContentItem {
 
     fn render(&self, f: &mut fmt::Formatter, is_alt: bool) -> fmt::Result {
         // main text
-        write!(f, "{}", self.text)?; //TODO escape pipes
+        write!(f, "{}", self.text)?; //TODO escape pipes and newlines
         // parameters
         let mut rendered_params = BTreeMap::default();
         if let Some(ref href) = self.href {

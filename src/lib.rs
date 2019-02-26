@@ -174,7 +174,12 @@ impl ContentItem {
         if !rendered_params.is_empty() {
             write!(f, " |")?;
             for (name, value) in rendered_params {
-                write!(f, " {}={}", name, value)?; //TODO quoting
+                let quoted_value = if value.contains(' ') {
+                    format!("\"{}\"", value)
+                } else {
+                    value
+                }; //TODO check for double quotes in value, fall back to single quotes? (test if BitBar supports these first)
+                write!(f, " {}={}", name, quoted_value)?;
             }
         }
         writeln!(f)?;

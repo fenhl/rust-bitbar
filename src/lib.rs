@@ -46,6 +46,18 @@ impl_into_color_for_css_color!(css_colors::RGBA);
 impl_into_color_for_css_color!(css_colors::HSL);
 impl_into_color_for_css_color!(css_colors::HSLA);
 
+#[cfg(feature = "serenity-color")]
+impl IntoColor for serenity::utils::Colour {
+    fn into_color(self) -> Result<Color, ColorParseError> {
+        Ok(Color {
+            r: self.r(),
+            g: self.g(),
+            b: self.b(),
+            a: 1.0
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct Command {
     pub args: Vec<String>,

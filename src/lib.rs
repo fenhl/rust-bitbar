@@ -7,6 +7,7 @@ use css_color_parser::{
     Color,
     ColorParseError
 };
+use derive_more::From;
 use url::Url;
 
 #[derive(Debug)]
@@ -58,17 +59,51 @@ impl IntoColor for serenity::utils::Colour {
     }
 }
 
-#[derive(Debug)]
-pub struct Command {
-    pub args: Vec<String>,
-    pub terminal: bool
+/// BitBar only supports up to five parameters for `bash=` commands (see <https://github.com/matryer/bitbar/issues/490>).
+#[derive(Debug, From)]
+pub enum Params {
+    Zero([String; 1]),
+    One([String; 2]),
+    Two([String; 3]),
+    Three([String; 4]),
+    Four([String; 5]),
+    Five([String; 6])
 }
 
-/// Converts an iterable of displayable values to a command argument vector. The `terminal` value will be `false`.
-impl<S: ToString, I: IntoIterator<Item = S>> From<I> for Command {
-    fn from(iterable: I) -> Command {
+impl Params {
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        match self {
+            Params::Zero(a) => a.iter(),
+            Params::One(a) => a.iter(),
+            Params::Two(a) => a.iter(),
+            Params::Three(a) => a.iter(),
+            Params::Four(a) => a.iter(),
+            Params::Five(a) => a.iter(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Command {
+    params: Params,
+    terminal: bool
+}
+
+impl Command {
+    /// Creates a `Command` with the `terminal` value set to `true`.
+    pub fn terminal(args: impl Into<Params>) -> Command {
         Command {
-            args: iterable.into_iter().map(|s| s.to_string()).collect(),
+            params: args.into(),
+            terminal: true
+        }
+    }
+}
+
+/// Converts an array containing a command string and 0–5 parameters to a command argument vector. The `terminal` value will be `false`.
+impl<P: Into<Params>> From<P> for Command {
+    fn from(params: P) -> Command {
+        Command {
+            params: params.into(),
             terminal: false
         }
     }
@@ -167,8 +202,8 @@ impl ContentItem {
             rendered_params.insert("font".into(), font.clone());
         }
         if let Some(ref cmd) = self.command {
-            for (i, arg) in cmd.args.iter().enumerate() {
-                rendered_params.insert(if i == 0 { "bash".into() } else { format!("param{}", i) }, arg.clone());
+            for (i, param) in cmd.params.iter().enumerate() {
+                rendered_params.insert(if i == 0 { "bash".into() } else { format!("param{}", i) }, param.clone());
             }
             if !cmd.terminal {
                 rendered_params.insert("terminal".into(), "false".into());

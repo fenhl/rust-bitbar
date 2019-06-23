@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 
@@ -10,6 +10,7 @@ serenity-color = ["serenity"]
 [dependencies]
 css-colors = "1"
 css-color-parser = "*"
+derive_more = "*"
 url = "1"
 
 [dependencies.serenity]

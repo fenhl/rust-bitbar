@@ -1,3 +1,10 @@
+//! # Features
+//!
+//! The following features can be enabled via Cargo:
+//!
+//! * `css-colors`: Adds a dependency to the [`css-colors`](https://crates.io/crates/css-colors) crate and implements `IntoColor` for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
+//! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
+
 use std::{
     collections::BTreeMap,
     fmt,
@@ -32,6 +39,7 @@ impl IntoColor for Color {
     }
 }
 
+#[cfg(feature = "css-colors")]
 macro_rules! impl_into_color_for_css_color {
     ($t:ty) => {
         impl IntoColor for $t {
@@ -42,12 +50,12 @@ macro_rules! impl_into_color_for_css_color {
     };
 }
 
-impl_into_color_for_css_color!(css_colors::RGB);
-impl_into_color_for_css_color!(css_colors::RGBA);
-impl_into_color_for_css_color!(css_colors::HSL);
-impl_into_color_for_css_color!(css_colors::HSLA);
+#[cfg(feature = "css-colors")] impl_into_color_for_css_color!(css_colors::RGB);
+#[cfg(feature = "css-colors")] impl_into_color_for_css_color!(css_colors::RGBA);
+#[cfg(feature = "css-colors")] impl_into_color_for_css_color!(css_colors::HSL);
+#[cfg(feature = "css-colors")] impl_into_color_for_css_color!(css_colors::HSLA);
 
-#[cfg(feature = "serenity-color")]
+#[cfg(feature = "serenity")]
 impl IntoColor for serenity::utils::Colour {
     fn into_color(self) -> Result<Color, ColorParseError> {
         Ok(Color {

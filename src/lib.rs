@@ -93,21 +93,27 @@ impl Params {
 }
 
 macro_rules! params_from {
-    ($n:literal, $variant:ident, $($elt:ident),+) => {
+    ($n:literal, $variant:ident, $($elt:ident: $t:ident),+) => {
         impl<T: ToString> From<[T; $n]> for Params {
             fn from([$($elt),+]: [T; $n]) -> Params {
+                Params::$variant([$($elt.to_string()),+])
+            }
+        }
+
+        impl<$($t: ToString),+> From<($($t,)+)> for Params {
+            fn from(($($elt,)+): ($($t,)+)) -> Params {
                 Params::$variant([$($elt.to_string()),+])
             }
         }
     };
 }
 
-params_from!(1, Zero, cmd);
-params_from!(2, One, cmd, param1);
-params_from!(3, Two, cmd, param1, param2);
-params_from!(4, Three, cmd, param1, param2, param3);
-params_from!(5, Four, cmd, param1, param2, param3, param4);
-params_from!(6, Five, cmd, param1, param2, param3, param4, param5);
+params_from!(1, Zero, cmd: A);
+params_from!(2, One, cmd: A, param1: B);
+params_from!(3, Two, cmd: A, param1: B, param2: C);
+params_from!(4, Three, cmd: A, param1: B, param2: C, param3: D);
+params_from!(5, Four, cmd: A, param1: B, param2: C, param3: D, param4: E);
+params_from!(6, Five, cmd: A, param1: B, param2: C, param3: D, param4: E, param5: F);
 
 #[derive(Debug)]
 pub struct Command {

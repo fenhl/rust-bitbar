@@ -16,7 +16,6 @@ use css_color_parser::{
     Color,
     ColorParseError
 };
-use derive_more::From;
 use url::Url;
 
 #[derive(Debug)]
@@ -70,7 +69,7 @@ impl IntoColor for serenity::utils::Colour {
 }
 
 /// BitBar only supports up to five parameters for `bash=` commands (see <https://github.com/matryer/bitbar/issues/490>).
-#[derive(Debug, From)]
+#[derive(Debug)]
 pub enum Params {
     Zero([String; 1]),
     One([String; 2]),
@@ -92,6 +91,23 @@ impl Params {
         }
     }
 }
+
+macro_rules! params_from {
+    ($n:literal, $variant:ident, $($elt:ident),+) => {
+        impl<T: ToString> From<[T; $n]> for Params {
+            fn from([$($elt),+]: [T; $n]) -> Params {
+                Params::$variant([$($elt.to_string()),+])
+            }
+        }
+    };
+}
+
+params_from!(1, Zero, cmd);
+params_from!(2, One, cmd, param1);
+params_from!(3, Two, cmd, param1, param2);
+params_from!(4, Three, cmd, param1, param2, param3);
+params_from!(5, Four, cmd, param1, param2, param3, param4);
+params_from!(6, Five, cmd, param1, param2, param3, param4, param5);
 
 #[derive(Debug)]
 pub struct Command {

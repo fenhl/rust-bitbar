@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 css-color-parser = "*"
-derive_more = "*"
 url = "1"
 
 [dependencies.css-colors]

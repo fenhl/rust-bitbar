@@ -4,14 +4,15 @@
 //!
 //! The following features can be enabled via Cargo:
 //!
-//! * `base64`: Adds a depencency to the [`base64`](https://crates.io/crates/base64) crate and adds `Image::encode` and `Image::encode_template` methods for using PNG files that aren't already base64-encoded.
+//! * `base64`: Adds a depencency to the [`base64`](https://crates.io/crates/base64) crate and implements conversion methods from PNG files that aren't already base64-encoded to `Image`s.
 //! * `css-colors`: Adds a dependency to the [`css-colors`](https://crates.io/crates/css-colors) crate and implements `IntoColor` for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
-//! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image` and adds an `Image::template` method.
+//! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image`.
 //! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
 
 use {
     std::{
         collections::BTreeMap,
+        convert::TryInto,
         fmt,
         iter::FromIterator
     },
@@ -161,29 +162,32 @@ pub struct Image {
     pub is_template: bool
 }
 
-#[cfg(feature = "base64")]
 impl Image {
-    pub fn encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> Image {
-        Image {
-            base64_data: base64::encode(input),
-            is_template: false
-        }
+    pub fn template<T: TryInto<Image>>(img: T) -> Result<Image, T::Error> {
+        let mut result = img.try_into()?;
+        result.is_template = true;
+        Ok(result)
     }
+}
 
-    pub fn encode_template<T: ?Sized + AsRef<[u8]>>(input: &T) -> Image {
+/// Converts already-encoded base64 data to a non-template image.
+impl From<String> for Image {
+    fn from(base64_data: String) -> Image {
         Image {
-            base64_data: base64::encode(input),
-            is_template: true
+            base64_data,
+            is_template: false
         }
     }
 }
 
-#[cfg(all(feature = "base64", feature = "image"))]
-impl Image {
-    pub fn template(img: DynamicImage) -> ImageResult<Image> {
-        let mut buf = Vec::default();
-        img.write_to(&mut buf, PNG)?;
-        Ok(Image::encode_template(&buf))
+/// Converts a PNG file to a non-template image.
+#[cfg(feature = "base64")]
+impl<T: ?Sized + AsRef<[u8]>> From<&T> for Image {
+    fn from(input: &T) -> Image {
+        Image {
+            base64_data: base64::encode(input),
+            is_template: false
+        }
     }
 }
 
@@ -194,7 +198,7 @@ impl TryFrom<DynamicImage> for Image {
     fn try_from(img: DynamicImage) -> ImageResult<Image> {
         let mut buf = Vec::default();
         img.write_to(&mut buf, PNG)?;
-        Ok(Image::encode(&buf))
+        Ok(Image::from(&buf))
     }
 }
 
@@ -254,20 +258,14 @@ impl ContentItem {
         self
     }
 
-    pub fn template_image(mut self, img: impl ToString) -> Self { //TODO support image types
-        self.image = Some(Image {
-            base64_data: img.to_string(),
-            is_template: true
-        });
-        self
+    pub fn template_image<T: TryInto<Image>>(mut self, img: T) -> Result<Self, T::Error> {
+        self.image = Some(Image::template(img)?);
+        Ok(self)
     }
 
-    pub fn image(mut self, img: impl ToString) -> Self { //TODO support image types
-        self.image = Some(Image {
-            base64_data: img.to_string(),
-            is_template: false
-        });
-        self
+    pub fn image<T: TryInto<Image>>(mut self, img: T) -> Result<Self, T::Error> {
+        self.image = Some(img.try_into()?);
+        Ok(self)
     }
 
     fn render(&self, f: &mut fmt::Formatter, is_alt: bool) -> fmt::Result {

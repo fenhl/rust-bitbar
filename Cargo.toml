@@ -8,8 +8,16 @@ edition = "2018"
 css-color-parser = "*"
 url = "1"
 
+[dependencies.base64]
+version = "*"
+optional = true
+
 [dependencies.css-colors]
 version = "1"
+optional = true
+
+[dependencies.image]
+version = "*"
 optional = true
 
 [dependencies.serenity]

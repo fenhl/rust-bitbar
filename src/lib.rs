@@ -1,3 +1,5 @@
+#![deny(rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings)]
+
 //! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) plugins in Rust. The main feature is the `Menu` type whose `Display` implementation generates output that conforms to the [BitBar plugin API](https://github.com/matryer/bitbar#plugin-api).
 //!
 //! # Features
@@ -268,7 +270,7 @@ impl ContentItem {
         Ok(self)
     }
 
-    fn render(&self, f: &mut fmt::Formatter, is_alt: bool) -> fmt::Result {
+    fn render(&self, f: &mut fmt::Formatter<'_>, is_alt: bool) -> fmt::Result {
         // main text
         write!(f, "{}", self.text)?; //TODO escape pipes and newlines
         // parameters
@@ -327,7 +329,7 @@ impl ContentItem {
 }
 
 impl fmt::Display for ContentItem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.render(f, false)
     }
 }
@@ -357,7 +359,7 @@ impl From<ContentItem> for MenuItem {
 }
 
 impl fmt::Display for MenuItem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MenuItem::Content(content) => write!(f, "{}", content),
             MenuItem::Sep => writeln!(f, "---")
@@ -378,7 +380,7 @@ impl<A: Into<MenuItem>> FromIterator<A> for Menu {
 ///
 /// Note that the output this generates already includes a trailing newline, so it should be used with `print!` instead of `println!`.
 impl fmt::Display for Menu {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for menu_item in &self.0 {
             write!(f, "{}", menu_item)?;
         }

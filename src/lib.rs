@@ -10,6 +10,7 @@
 //! * `css-colors`: Adds a dependency to the [`css-colors`](https://crates.io/crates/css-colors) crate and implements `IntoColor` for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
 //! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image`.
 //! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
+//! * `url1`: Adds a dependency to version 1 of the [`url`](https://crates.io/crates/url) crate and implements `IntoUrl` for its `Url` type.
 
 use {
     std::{
@@ -34,6 +35,8 @@ use {
         ImageResult
     }
 };
+#[cfg(feature = "url1")]
+use url1::Url as Url1;
 
 #[derive(Debug)]
 pub enum Extra {
@@ -82,6 +85,29 @@ impl IntoColor for serenity::utils::Colour {
             b: self.b(),
             a: 1.0
         })
+    }
+}
+
+pub trait IntoUrl {
+    fn into_url(self) -> Result<Url, url::ParseError>;
+}
+
+impl IntoUrl for Url {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        Ok(self)
+    }
+}
+
+impl<'a> IntoUrl for &'a str {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        Url::parse(self)
+    }
+}
+
+#[cfg(feature = "url1")]
+impl IntoUrl for Url1 {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        Url::parse(self.as_str())
     }
 }
 
@@ -229,9 +255,9 @@ impl ContentItem {
         self
     }
 
-    pub fn href(mut self, href: Url) -> Self {
-        self.href = Some(href);
-        self
+    pub fn href(mut self, href: impl IntoUrl) -> Result<Self, url::ParseError> {
+        self.href = Some(href.into_url()?);
+        Ok(self)
     }
 
     /// Sets the menu item's text color. Alpha channel is ignored.

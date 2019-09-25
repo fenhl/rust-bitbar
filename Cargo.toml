@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 css-color-parser = "*"
-url = "1"
+url = "2"
 
 [dependencies.base64]
 version = "*"
@@ -25,3 +25,8 @@ version = "*"
 optional = true
 default-features = false
 features = ["utils"]
+
+[dependencies.url1]
+package = "url"
+version = "1"
+optional = true

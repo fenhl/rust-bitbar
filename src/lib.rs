@@ -98,6 +98,12 @@ impl IntoUrl for Url {
     }
 }
 
+impl IntoUrl for String {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        Url::parse(&self)
+    }
+}
+
 impl<'a> IntoUrl for &'a str {
     fn into_url(self) -> Result<Url, url::ParseError> {
         Url::parse(self)

@@ -15,7 +15,10 @@
 use {
     std::{
         collections::BTreeMap,
-        convert::TryInto,
+        convert::{
+            TryFrom,
+            TryInto
+        },
         fmt,
         iter::FromIterator
     },
@@ -27,7 +30,6 @@ use {
 };
 #[cfg(all(feature = "base64", feature = "image"))]
 use {
-    std::convert::TryFrom,
     image::{
         DynamicImage,
         ImageError,
@@ -164,6 +166,38 @@ params_from!(4, Three, cmd: A, param1: B, param2: C, param3: D);
 params_from!(5, Four, cmd: A, param1: B, param2: C, param3: D, param4: E);
 params_from!(6, Five, cmd: A, param1: B, param2: C, param3: D, param4: E, param5: F);
 
+impl<'a, T: ToString> TryFrom<&'a [T]> for Params {
+    type Error = &'a [T];
+
+    fn try_from(slice: &[T]) -> Result<Params, &[T]> {
+        match slice {
+            [cmd] => Ok(Params::Zero([cmd.to_string()])),
+            [cmd, param1] => Ok(Params::One([cmd.to_string(), param1.to_string()])),
+            [cmd, param1, param2] => Ok(Params::Two([cmd.to_string(), param1.to_string(), param2.to_string()])),
+            [cmd, param1, param2, param3] => Ok(Params::Three([cmd.to_string(), param1.to_string(), param2.to_string(), param3.to_string()])),
+            [cmd, param1, param2, param3, param4] => Ok(Params::Four([cmd.to_string(), param1.to_string(), param2.to_string(), param3.to_string(), param4.to_string()])),
+            [cmd, param1, param2, param3, param4, param5] => Ok(Params::Five([cmd.to_string(), param1.to_string(), param2.to_string(), param3.to_string(), param4.to_string(), param5.to_string()])),
+            slice => Err(slice)
+        }
+    }
+}
+
+impl<T: ToString> TryFrom<Vec<T>> for Params {
+    type Error = Vec<T>;
+
+    fn try_from(mut v: Vec<T>) -> Result<Params, Vec<T>> {
+        match v.len() {
+            1 => Ok(Params::Zero([v.remove(0).to_string()])),
+            2 => Ok(Params::One([v.remove(0).to_string(), v.remove(0).to_string()])),
+            3 => Ok(Params::Two([v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string()])),
+            4 => Ok(Params::Three([v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string()])),
+            5 => Ok(Params::Four([v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string()])),
+            6 => Ok(Params::Five([v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string(), v.remove(0).to_string()])),
+            _ => Err(v)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Command {
     params: Params,
@@ -178,13 +212,31 @@ impl Command {
             terminal: true
         }
     }
+
+    /// Attempts to construct a `Command` with `terminal` set to `false` from the given arguments.
+    ///
+    /// This is not a `TryFrom` implementation due to a limitation in Rust.
+    pub fn try_from<P: TryInto<Params>>(args: P) -> Result<Command, P::Error> {
+        Ok(Command {
+            params: args.try_into()?,
+            terminal: false
+        })
+    }
+
+    /// Same as `Command::terminal` but for types that might not convert to `Params`.
+    pub fn try_terminal<P: TryInto<Params>>(args: P) -> Result<Command, P::Error> {
+        Ok(Command {
+            params: args.try_into()?,
+            terminal: true
+        })
+    }
 }
 
 /// Converts an array containing a command string and 0–5 parameters to a command argument vector. The `terminal` value will be `false`.
 impl<P: Into<Params>> From<P> for Command {
-    fn from(params: P) -> Command {
+    fn from(args: P) -> Command {
         Command {
-            params: params.into(),
+            params: args.into(),
             terminal: false
         }
     }

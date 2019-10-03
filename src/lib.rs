@@ -301,6 +301,9 @@ pub struct ContentItem {
 }
 
 impl ContentItem {
+    /// Returns a new menu item with the given text.
+    ///
+    /// Any `|` in the text will be displayed as `¦`, and any newlines will be displayed as spaces.
     pub fn new(text: impl ToString) -> ContentItem {
         ContentItem {
             text: text.to_string(),
@@ -356,7 +359,7 @@ impl ContentItem {
 
     fn render(&self, f: &mut fmt::Formatter<'_>, is_alt: bool) -> fmt::Result {
         // main text
-        write!(f, "{}", self.text)?; //TODO escape pipes and newlines
+        write!(f, "{}", self.text.replace('|', "¦").replace('\n', " "))?;
         // parameters
         let mut rendered_params = BTreeMap::default();
         if let Some(ref href) = self.href {
@@ -425,6 +428,7 @@ pub enum MenuItem {
 }
 
 impl MenuItem {
+    /// Returns a new menu item with the given text. See `ContentItem::new` for details.
     pub fn new(text: impl fmt::Display) -> MenuItem {
         MenuItem::Content(ContentItem::new(text))
     }

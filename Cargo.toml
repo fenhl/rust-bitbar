@@ -3,6 +3,8 @@ name = "bitbar"
 version = "0.3.0"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/fenhl/rust-bitbar"
 
 [dependencies]
 css-color-parser = "0.1.2"

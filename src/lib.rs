@@ -1,4 +1,4 @@
-#![deny(rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings)]
+#![deny(rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings, missing_docs)]
 
 //! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) plugins in Rust. The main feature is the `Menu` type whose `Display` implementation generates output that conforms to the [BitBar plugin API](https://github.com/matryer/bitbar#plugin-api).
 //!
@@ -55,12 +55,17 @@ use {
 use url1::Url as Url1;
 
 #[derive(Debug)]
+/// A menu item's alternate mode or submenu.
 pub enum Extra {
+    /// A menu item's alternate mode.
     Alternate(Box<ContentItem>), //TODO make sure alts don't have submenus
+    /// A submenu.
     Submenu(Menu)
 }
 
+/// Used by `ContentItem::color`.
 pub trait IntoColor {
+    /// Converts `self` into a [`Color`](https://docs.rs/css-color-parser/0.1.2/css_color_parser/struct.Color.html).
     fn into_color(self) -> Result<Color, ColorParseError>;
 }
 
@@ -104,7 +109,9 @@ impl IntoColor for serenity::utils::Colour {
     }
 }
 
+/// Used by `ContentItem::href`.
 pub trait IntoUrl {
+    /// Converts `self` into a [`Url`](https://docs.rs/url/2/url/struct.Url.html).
     fn into_url(self) -> Result<Url, url::ParseError>;
 }
 
@@ -136,15 +143,22 @@ impl IntoUrl for Url1 {
 /// BitBar only supports up to five parameters for `bash=` commands (see <https://github.com/matryer/bitbar/issues/490>).
 #[derive(Debug)]
 pub enum Params {
+    /// Just a command, no arguments.
     Zero([String; 1]),
+    /// A command and 1 argument.
     One([String; 2]),
+    /// A command and 2 arguments.
     Two([String; 3]),
+    /// A command and 3 arguments.
     Three([String; 4]),
+    /// A command and 4 arguments.
     Four([String; 5]),
+    /// A command and 5 arguments.
     Five([String; 6])
 }
 
 impl Params {
+    /// Iterates over the command and any arguments in order.
     pub fn iter(&self) -> impl Iterator<Item = &String> {
         match self {
             Params::Zero(a) => a.iter(),
@@ -212,6 +226,13 @@ impl<T: ToString> TryFrom<Vec<T>> for Params {
     }
 }
 
+/// Used by `ContentItem::command`.
+///
+/// A `Command` contains the `Params`, which includes the actual command (called `bash=` by BitBar) and its parameters, and the value of `terminal=`.
+///
+/// It is usually constructed via conversion, unless `terminal=true` is required.
+///
+/// **Note:** Unlike BitBar's default of `true`, `Command` assumes a default of `terminal=false`.
 #[derive(Debug)]
 pub struct Command {
     params: Params,
@@ -219,7 +240,7 @@ pub struct Command {
 }
 
 impl Command {
-    /// Creates a `Command` with the `terminal` value set to `true`.
+    /// Creates a `Command` with the `terminal=` value set to `true`.
     pub fn terminal(args: impl Into<Params>) -> Command {
         Command {
             params: args.into(),
@@ -227,7 +248,7 @@ impl Command {
         }
     }
 
-    /// Attempts to construct a `Command` with `terminal` set to `false` from the given arguments.
+    /// Attempts to construct a `Command` with `terminal=` set to `false` from the given arguments.
     ///
     /// This is not a `TryFrom` implementation due to a limitation in Rust.
     pub fn try_from<P: TryInto<Params>>(args: P) -> Result<Command, P::Error> {
@@ -246,7 +267,7 @@ impl Command {
     }
 }
 
-/// Converts an array containing a command string and 0–5 parameters to a command argument vector. The `terminal` value will be `false`.
+/// Converts an array containing a command string and 0–5 parameters to a command argument vector. The `terminal=` value will be `false`.
 impl<P: Into<Params>> From<P> for Command {
     fn from(args: P) -> Command {
         Command {
@@ -256,13 +277,17 @@ impl<P: Into<Params>> From<P> for Command {
     }
 }
 
+/// Used by `ContentItem::image` and `ContentItem::template_image`.
 #[derive(Debug)]
 pub struct Image {
+    /// The base64-encoded image data.
     pub base64_data: String,
+    /// If this is `true`, the image will be used with BitBar's `templateImage=` instead of `image=`.
     pub is_template: bool
 }
 
 impl Image {
+    /// Constructs a template image, even if the `TryInto` implementation would otherwise construct a non-template image.
     pub fn template<T: TryInto<Image>>(img: T) -> Result<Image, T::Error> {
         let mut result = img.try_into()?;
         result.is_template = true;
@@ -302,15 +327,26 @@ impl TryFrom<DynamicImage> for Image {
     }
 }
 
+/// A menu item that's not a separator.
 #[derive(Debug, Default)]
 pub struct ContentItem {
+    /// This menu item's main content text.
+    ///
+    /// Any `|` in the text will be displayed as `¦`, and any newlines will be displayed as spaces.
     pub text: String,
+    /// This menu item's alternate-mode menu item or submenu.
     pub extra: Option<Extra>,
+    /// Corresponds to BitBar's `href=` parameter.
     pub href: Option<Url>,
+    /// Corresponds to BitBar's `color=` parameter.
     pub color: Option<Color>,
+    /// Corresponds to BitBar's `font=` parameter.
     pub font: Option<String>,
+    /// Corresponds to BitBar's `bash=`, `terminal=`, `param1=`, etc. parameters.
     pub command: Option<Command>,
+    /// Corresponds to BitBar's `refresh=` parameter.
     pub refresh: bool,
+    /// Corresponds to BitBar's `image=` or `templateImage=` parameter.
     pub image: Option<Image>
 }
 
@@ -325,47 +361,55 @@ impl ContentItem {
         }
     }
 
+    /// Adds a submenu to this menu item.
     pub fn sub(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
         self.extra = Some(Extra::Submenu(Menu::from_iter(items)));
         self
     }
 
+    /// Adds a clickable link to this menu item.
     pub fn href(mut self, href: impl IntoUrl) -> Result<Self, url::ParseError> {
         self.href = Some(href.into_url()?);
         Ok(self)
     }
 
-    /// Sets the menu item's text color. Alpha channel is ignored.
+    /// Sets this menu item's text color. Alpha channel is ignored.
     pub fn color(mut self, color: impl IntoColor) -> Result<Self, ColorParseError> {
         self.color = Some(color.into_color()?);
         Ok(self)
     }
 
+    /// Sets this menu item's text font.
     pub fn font(mut self, font: impl ToString) -> Self {
         self.font = Some(font.to_string());
         self
     }
 
+    /// Make this menu item run the given command when clicked.
     pub fn command(mut self, cmd: impl Into<Command>) -> Self {
         self.command = Some(cmd.into());
         self
     }
 
+    /// Causes the BitBar plugin to be refreshed when this menu item is clicked.
     pub fn refresh(mut self) -> Self {
         self.refresh = true;
         self
     }
 
+    /// Adds an alternate menu item, which is shown instead of this one as long as the option key ⌥ is held.
     pub fn alt(mut self, alt: impl Into<ContentItem>) -> Self {
         self.extra = Some(Extra::Alternate(Box::new(alt.into())));
         self
     }
 
+    /// Adds a template image to this menu item.
     pub fn template_image<T: TryInto<Image>>(mut self, img: T) -> Result<Self, T::Error> {
         self.image = Some(Image::template(img)?);
         Ok(self)
     }
 
+    /// Adds an image to this menu item. The image will not be considered a template image unless specified as such by the `img` parameter.
     pub fn image<T: TryInto<Image>>(mut self, img: T) -> Result<Self, T::Error> {
         self.image = Some(img.try_into()?);
         Ok(self)
@@ -435,9 +479,12 @@ impl fmt::Display for ContentItem {
     }
 }
 
+/// A menu item can either be a separator or a content item.
 #[derive(Debug)]
 pub enum MenuItem {
+    /// A content item, i.e. any menu item that's not a separator.
     Content(ContentItem),
+    /// A separator bar.
     Sep
 }
 
@@ -469,6 +516,9 @@ impl fmt::Display for MenuItem {
     }
 }
 
+/// A BitBar menu.
+///
+/// Usually constructed by calling [`collect`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect) on an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) of `MenuItem`s.
 #[derive(Debug, Default)]
 pub struct Menu(pub Vec<MenuItem>);
 

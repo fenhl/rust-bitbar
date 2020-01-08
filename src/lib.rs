@@ -10,7 +10,7 @@
 //! * `css-colors`: Adds a dependency to the [`css-colors`](https://crates.io/crates/css-colors) crate and implements `IntoColor` for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
 //! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image`.
 //! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
-//! * `url1`: Adds a dependency to version 1 of the [`url`](https://crates.io/crates/url) crate and implements `IntoUrl` for its `Url` type.
+//! * `url1`: Adds a dependency to the outdated version 1 of the [`url`](https://crates.io/crates/url) crate and implements `IntoUrl` for its `Url` type.
 //!
 //! # Example
 //!
@@ -300,6 +300,17 @@ impl From<String> for Image {
     fn from(base64_data: String) -> Image {
         Image {
             base64_data,
+            is_template: false
+        }
+    }
+}
+
+/// Converts a PNG file to a non-template image.
+#[cfg(feature = "base64")]
+impl From<Vec<u8>> for Image {
+    fn from(input: Vec<u8>) -> Image {
+        Image {
+            base64_data: base64::encode(&input),
             is_template: false
         }
     }

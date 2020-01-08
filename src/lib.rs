@@ -11,6 +11,20 @@
 //! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image`.
 //! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
 //! * `url1`: Adds a dependency to version 1 of the [`url`](https://crates.io/crates/url) crate and implements `IntoUrl` for its `Url` type.
+//!
+//! # Example
+//!
+//! ```rust
+//! use bitbar::{Menu, MenuItem};
+//!
+//! fn main() {
+//!     print!("{}", Menu(vec![
+//!         MenuItem::new("Title"),
+//!         MenuItem::Sep,
+//!         MenuItem::new("Menu Item")
+//!     ]));
+//! }
+//! ```
 
 use {
     std::{

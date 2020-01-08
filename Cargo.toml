@@ -7,6 +7,9 @@ description = "Helper library for writing BitBar plugins"
 license = "MIT"
 repository = "https://github.com/fenhl/rust-bitbar"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 css-color-parser = "0.1.2"
 url = "2"

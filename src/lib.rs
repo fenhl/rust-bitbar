@@ -57,7 +57,7 @@ use url1::Url as Url1;
 #[derive(Debug)]
 /// A menu item's alternate mode or submenu.
 pub enum Extra {
-    /// A menu item's alternate mode.
+    /// A menu item's alternate mode, shown when <key>⌥</key> is held.
     Alternate(Box<ContentItem>), //TODO make sure alts don't have submenus
     /// A submenu.
     Submenu(Menu)

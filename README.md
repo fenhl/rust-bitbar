@@ -12,6 +12,7 @@ Here are some BitBar plugins that use this library:
 * [Mediawiki watchlist](https://github.com/fenhl/bitbar-mediawiki-watchlist)
 * [speedrun.com](https://github.com/fenhl/bitbar-speedruncom)
 * [twitch.tv](https://github.com/fenhl/bitbar-twitch)
+* [Wurstmineberg server status](https://github.com/wurstmineberg/bitbar-server-status)
 
 If you have a BitBar plugin that uses this library, feel free to open a pull request to add it to this list.
 

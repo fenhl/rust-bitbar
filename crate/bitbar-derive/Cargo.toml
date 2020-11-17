@@ -1,0 +1,17 @@
+[package]
+name = "bitbar-derive"
+version = "0.4.0"
+authors = ["Fenhl <fenhl@fenhl.net>"]
+edition = "2018"
+description = "Proc-macros for the bitbar crate"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/fenhl/rust-bitbar"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = "1"

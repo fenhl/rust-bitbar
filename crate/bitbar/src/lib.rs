@@ -31,16 +31,17 @@ use {
         collections::BTreeMap,
         convert::{
             TryFrom,
-            TryInto
+            TryInto,
         },
         fmt,
-        iter::FromIterator
+        iter::FromIterator,
+        vec,
     },
     css_color_parser::{
         Color,
-        ColorParseError
+        ColorParseError,
     },
-    url::Url
+    url::Url,
 };
 #[cfg(all(feature = "base64", feature = "image"))]
 use {
@@ -48,11 +49,21 @@ use {
         DynamicImage,
         ImageError,
         ImageOutputFormat::PNG,
-        ImageResult
-    }
+        ImageResult,
+    },
 };
 #[cfg(feature = "url1")]
 use url1::Url as Url1;
+pub use bitbar_derive::{
+    command,
+    main,
+};
+#[doc(hidden)] pub use { // used in proc macro
+    inventory,
+    notify_rust,
+    structopt,
+    tokio,
+};
 
 #[derive(Debug)]
 /// A menu item's alternate mode or submenu.
@@ -537,6 +548,19 @@ impl<A: Into<MenuItem>> FromIterator<A> for Menu {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Menu {
         Menu(iter.into_iter().map(Into::into).collect())
     }
+}
+
+impl<A: Into<MenuItem>> Extend<A> for Menu {
+    fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
+        self.0.extend(iter.into_iter().map(Into::into))
+    }
+}
+
+impl IntoIterator for Menu {
+    type Item = MenuItem;
+    type IntoIter = vec::IntoIter<MenuItem>;
+
+    fn into_iter(self) -> vec::IntoIter<MenuItem> { self.0.into_iter() }
 }
 
 /// This provides the main functionality of this crate: rendering a BitBar plugin.

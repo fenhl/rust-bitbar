@@ -15,8 +15,16 @@ use {
     proc_macro2::Span,
     quote::quote,
     syn::{
+        AttributeArgs,
         Ident,
         ItemFn,
+        Lit,
+        Meta,
+        MetaNameValue,
+        NestedMeta,
+        ReturnType,
+        Type,
+        TypePath,
         parse_macro_input,
     },
 };
@@ -56,25 +64,51 @@ pub fn command(_: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Annotate your `main` function with this.
 ///
-/// * It can be a `fn` or an `async fn`. In the latter case, `tokio`'s threaded runtime will be used.
-/// * It must return a `Result<Menu, E>`, for some `E` that implements `Into<Menu>`.
+/// * It can be a `fn` or an `async fn`. In the latter case, `tokio`'s threaded runtime will be used. (This requires the `tokio` feature, which is on by default, or the `tokio02` feature, which is not.)
+/// * It must return a `Menu` or a `Result<Menu, E>`, for some `E` that implements `Into<Menu>`. The `Result` in the type signature must be unqualified (`::std::result::Result` will not work).
+///
+/// The `main` attribute optionally takes a parameter `error_template_image` which can be set to a path (relative to the current file) to a PNG file which will be used as the template image for the menu when displaying an error.
 #[proc_macro_attribute]
-pub fn main(_: TokenStream, item: TokenStream) -> TokenStream { //TODO parse template image for error menu from attribute param
+pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as AttributeArgs);
+    let error_template_image = match &args[..] {
+        [] => quote!(),
+        [NestedMeta::Meta(Meta::NameValue(MetaNameValue { path, lit: Lit::Str(path_lit), ..}))]
+        if path.get_ident().map_or(false, |arg| arg.to_string() == "error_template_image") => {
+            quote!(.template_image(&include_bytes!(#path_lit)[..]).never_unwrap())
+        }
+        _ => return TokenStream::from(quote!(compile_error!("unexpected bitbar::main arguments"))),
+    };
     let main_fn = parse_macro_input!(item as ItemFn);
     let asyncness = &main_fn.sig.asyncness;
-    let main_prefix = if let Some(async_keyword) = asyncness {
-        quote!(#[tokio::main] #async_keyword)
-    } else {
-        quote!()
-    };
+    let use_tokio = asyncness.as_ref().map(|_| quote!(use ::bitbar::tokio;));
+    let main_prefix = asyncness.as_ref().map(|async_keyword| quote!(#[tokio::main] #async_keyword));
     let awaitness = asyncness.as_ref().map(|_| quote!(.await));
     let ret = main_fn.sig.output;
+    let mut main_ret_match_body = quote! {
+        menu => print!("{}", menu),
+    };
+    if let ReturnType::Type(_, ref ty) = ret {
+        if let Type::Path(TypePath { qself: None, ref path }) = **ty {
+            if path.segments.len() == 1 && path.segments[0].ident.to_string() == "Result" {
+                main_ret_match_body = quote! {
+                    ::core::result::Result::Ok(menu) => print!("{}", menu),
+                    ::core::result::Result::Err(e) => {
+                        let mut menu = Menu(vec![
+                            ::bitbar::ContentItem::new("?")#error_template_image.into(),
+                            ::bitbar::MenuItem::Sep,
+                        ]);
+                        menu.extend(::bitbar::Menu::from(e));
+                        print!("{}", menu);
+                    }
+                }
+            }
+        }
+    };
     let body = main_fn.block;
     TokenStream::from(quote! {
-        use ::bitbar::{
-            inventory,
-            tokio,
-        };
+        use ::bitbar::inventory;
+        #use_tokio
 
         struct Subcommand {
             name: &'static str,
@@ -96,34 +130,24 @@ pub fn main(_: TokenStream, item: TokenStream) -> TokenStream { //TODO parse tem
 
         #main_prefix fn main() {
             //TODO set up a more friendly panic hook (similar to human-panic but rendering the panic message as a menu)
-            let mut args = env::args_os();
+            let mut args = ::std::env::args_os();
             let program = args.next().expect("missing program name");
-            if let Some(subcommand) = args.next() {
+            if let ::core::option::Option::Some(subcommand) = args.next() {
                 let subcommand = match subcommand.into_string() {
-                    Ok(subcommand) => subcommand,
-                    Err(_) => {
+                    ::core::result::Result::Ok(subcommand) => subcommand,
+                    ::core::result::Result::Err(_) => {
                         bitbar_notify("subcommand is not valid UTF-8");
                         ::std::process::exit(1);
                     }
                 };
-                if let Some(command) = inventory::iter::<Subcommand>.into_iter().find(|command| command.name == subcommand) {
+                if let ::core::option::Option::Some(command) = inventory::iter::<Subcommand>.into_iter().find(|command| command.name == subcommand) {
                     (command.func)(program, args.collect());
                 } else {
                     bitbar_notify(format!("no such subcommand: {}", subcommand));
                     ::std::process::exit(1);
                 }
             } else {
-                match main_inner()#awaitness {
-                    Ok(menu) => print!("{}", menu),
-                    Err(e) => {
-                        let mut menu = Menu(vec![
-                            ::bitbar::MenuItem::new("?"), //TODO add template image
-                            ::bitbar::MenuItem::Sep,
-                        ]);
-                        menu.extend(::bitbar::Menu::from(e));
-                        print!("{}", menu);
-                    }
-                }
+                match main_inner()#awaitness { #main_ret_match_body }
             }
         }
     })

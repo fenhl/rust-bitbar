@@ -58,12 +58,14 @@ pub use bitbar_derive::{
     command,
     main,
 };
-#[doc(hidden)] pub use { // used in proc macro
+// used in proc macro
+#[doc(hidden)] pub use {
     inventory,
     notify_rust,
     structopt,
-    tokio,
 };
+#[cfg(feature = "tokio")] #[doc(hidden)] pub use tokio;
+#[cfg(feature = "tokio02")] #[doc(hidden)] pub use tokio02 as tokio;
 
 #[derive(Debug)]
 /// A menu item's alternate mode or submenu.

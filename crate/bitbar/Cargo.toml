@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 description = "Helper library for writing BitBar plugins"
@@ -10,6 +10,9 @@ repository = "https://github.com/fenhl/rust-bitbar"
 
 [package.metadata.docs.rs]
 all-features = true
+
+[features]
+default = ["tokio"]
 
 [dependencies]
 css-color-parser = "0.1.2"
@@ -36,16 +39,23 @@ optional = true
 
 [dependencies.serenity]
 version = "0.9"
-optional = true
 default-features = false
 features = [
     "model", "rustls_backend", #TODO remove once https://github.com/serenity-rs/serenity/issues/763 is fixed
     "utils"
 ]
+optional = true
 
 [dependencies.tokio] # used in proc macro
 version = "0.3"
 features = ["macros", "rt-multi-thread"]
+optional = true
+
+[dependencies.tokio02]
+package = "tokio"
+version = "0.2"
+features = ["macros", "rt-threaded"]
+optional = true
 
 [dependencies.url1]
 package = "url"

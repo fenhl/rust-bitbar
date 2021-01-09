@@ -7,6 +7,7 @@ description = "Helper library for writing BitBar plugins"
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/fenhl/rust-bitbar"
+keywords = ["bitbar-plugin", "plugin", "macos", "menu-bar", "swiftbar"]
 
 [package.metadata.docs.rs]
 features = ["base64", "css-colors", "image", "serenity", "tokio", "url1"]
@@ -38,7 +39,7 @@ version = "0.22.2"
 optional = true
 
 [dependencies.serenity]
-version = "0.9"
+version = "0.10"
 default-features = false
 features = [
     "model", "rustls_backend", #TODO remove once https://github.com/serenity-rs/serenity/issues/763 is fixed
@@ -47,6 +48,12 @@ features = [
 optional = true
 
 [dependencies.tokio] # used in proc macro
+version = "1"
+features = ["macros", "rt-multi-thread"]
+optional = true
+
+[dependencies.tokio03]
+package = "tokio"
 version = "0.3"
 features = ["macros", "rt-multi-thread"]
 optional = true

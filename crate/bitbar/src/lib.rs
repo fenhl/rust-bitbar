@@ -1,18 +1,44 @@
 #![deny(rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings, missing_docs)]
 
-//! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) plugins in Rust. The main feature is the `Menu` type whose `Display` implementation generates output that conforms to the [BitBar plugin API](https://github.com/matryer/bitbar#plugin-api).
+//! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) or [SwiftBar](https://swiftbar.app/) plugins in Rust.
+//!
+//! There are two main entry points:
+//!
+//! * It's recommended to use the [`main`](crate::main) attribute and write a `main` function that returns a [`Menu`](crate::Menu), along with optional [`command`](crate::command) functions.
+//! * For additional control over your plugin's behavior, you can directly [`Display`](std::fmt::Display) a [`Menu`](crate::Menu).
 //!
 //! # Features
 //!
+//! The following feature is enabled by default:
+//!
+//! * `tokio`: Adds a dependency to the [`tokio`](https://docs.rs/tokio) crate, allowing you to use `async fn`s with the [`main`](crate::main) attribute.
+//!
 //! The following features can be enabled via Cargo:
 //!
-//! * `base64`: Adds a depencency to the [`base64`](https://crates.io/crates/base64) crate and implements conversion methods from PNG files that aren't already base64-encoded to `Image`s.
-//! * `css-colors`: Adds a dependency to the [`css-colors`](https://crates.io/crates/css-colors) crate and implements `IntoColor` for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
-//! * `image`: Adds a depencency to the [`image`](https://crates.io/crates/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for `Image`.
-//! * `serenity`: Adds a dependency to the [`serenity`](https://crates.io/crates/serenity) crate and implements `IntoColor` for its `Colour` type.
-//! * `url1`: Adds a dependency to the outdated version 1 of the [`url`](https://crates.io/crates/url) crate and implements `IntoUrl` for its `Url` type.
+//! * `base64`: Adds a depencency to the [`base64`](https://docs.rs/base64) crate and implements conversion methods from PNG files that aren't already base64-encoded to [`Image`](crate::Image)s.
+//! * `css-colors`: Adds a dependency to the [`css-colors`](https://docs.rs/css-colors) crate and implements [`IntoColor`](crate::IntoColor) for its color types `RGB`, `RGBA`, `HSL`, and `HSLA`.
+//! * `image`: Adds a depencency to the [`image`](https://docs.rs/image) crate. If the `base64` feature is also enabled, implements `TryFrom<DynamicImage>` for [`Image`](crate::Image).
+//! * `serenity`: Adds a dependency to the [`serenity`](https://docs.rs/serenity) crate and implements [`IntoColor`](crate::IntoColor) for its `Colour` type.
+//! * `tokio02`: Adds a dependency to [the outdated version 0.2 of the `tokio` crate](https://docs.rs/tokio/0.2), allowing you to use `async fn`s with the [`main`](crate::main) attribute while using that version's runtime. The `tokio` feature should be disabled when using this feature.
+//! * `tokio03`: Adds a dependency to [the outdated version 0.3 of the `tokio` crate](https://docs.rs/tokio/0.2), allowing you to use `async fn`s with the [`main`](crate::main) attribute while using that version's runtime. The `tokio` feature should be disabled when using this feature.
+//! * `url1`: Adds a dependency to [the outdated version 1 of the `url` crate](https://docs.rs/url/1) and implements [`IntoUrl`](crate::IntoUrl) for its `Url` type.
 //!
 //! # Example
+//!
+//! ```rust
+//! use bitbar::{Menu, MenuItem};
+//!
+//! #[bitbar::main]
+//! fn main() -> Menu {
+//!     Menu(vec![
+//!         MenuItem::new("Title"),
+//!         MenuItem::Sep,
+//!         MenuItem::new("Menu Item"),
+//!     ])
+//! }
+//! ```
+//!
+//! Or:
 //!
 //! ```rust
 //! use bitbar::{Menu, MenuItem};
@@ -21,7 +47,7 @@
 //!     print!("{}", Menu(vec![
 //!         MenuItem::new("Title"),
 //!         MenuItem::Sep,
-//!         MenuItem::new("Menu Item")
+//!         MenuItem::new("Menu Item"),
 //!     ]));
 //! }
 //! ```

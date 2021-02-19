@@ -1,10 +1,11 @@
-#![deny(rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings, missing_docs)]
+#![deny(missing_docs, rust_2018_idioms, unused, unused_crate_dependencies, unused_import_braces, unused_qualifications, warnings)]
+#![forbid(unsafe_code)]
 
 //! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) or [SwiftBar](https://swiftbar.app/) plugins in Rust.
 //!
 //! There are two main entry points:
 //!
-//! * It's recommended to use the [`main`](crate::main) attribute and write a `main` function that returns a [`Menu`](crate::Menu), along with optional [`command`](crate::command) functions.
+//! * It's recommended to use the [`main`](crate::main) attribute and write a `main` function that returns a [`Menu`](crate::Menu), along with optional [`command`](crate::command) functions and an optional [`fallback_command`](crate::fallback_command) function.
 //! * For additional control over your plugin's behavior, you can directly [`Display`](std::fmt::Display) a [`Menu`](crate::Menu).
 //!
 //! # Features
@@ -61,6 +62,7 @@ use {
         },
         fmt,
         iter::FromIterator,
+        process,
         vec,
     },
     css_color_parser::{
@@ -69,8 +71,7 @@ use {
     },
     url::Url,
 };
-#[cfg(all(feature = "base64", feature = "image"))]
-use {
+#[cfg(all(feature = "base64", feature = "image"))] use {
     image::{
         DynamicImage,
         ImageError,
@@ -78,20 +79,20 @@ use {
         ImageResult,
     },
 };
-#[cfg(feature = "url1")]
-use url1::Url as Url1;
+#[cfg(feature = "url1")] use url1::Url as Url1;
 pub use bitbar_derive::{
     command,
+    fallback_command,
     main,
 };
-// used in proc macro
-#[doc(hidden)] pub use {
+#[doc(hidden)] pub use { // used in proc macro
     inventory,
     notify_rust,
     structopt,
 };
-#[cfg(feature = "tokio")] #[doc(hidden)] pub use tokio;
-#[cfg(feature = "tokio02")] #[doc(hidden)] pub use tokio02 as tokio;
+#[cfg(feature = "tokio")] #[doc(hidden)] pub use dep_tokio as tokio;
+#[cfg(feature = "tokio02")] #[doc(hidden)] pub use dep_tokio02 as tokio;
+#[cfg(feature = "tokio03")] #[doc(hidden)] pub use dep_tokio03 as tokio;
 
 #[derive(Debug)]
 /// A menu item's alternate mode or submenu.
@@ -601,4 +602,66 @@ impl fmt::Display for Menu {
         }
         Ok(())
     }
+}
+
+/// Members of this trait can be returned from a main function annotated with [`bitbar::main`].
+pub trait MainOutput {
+    /// Converts this value into a [`Menu`], displaying the given template image in case of an error.
+    fn main_output(self, error_template_image: Option<Image>) -> Menu;
+}
+
+impl<T: Into<Menu>> MainOutput for T {
+    fn main_output(self, _: Option<Image>) -> Menu { self.into() }
+}
+
+/// In the `Err` case, the menu will be prefixed with a menu item displaying the `error_template_image` and the text `?`.
+impl<T: MainOutput, E: MainOutput> MainOutput for Result<T, E> {
+    fn main_output(self, error_template_image: Option<Image>) -> Menu {
+        match self {
+            Ok(x) => x.main_output(error_template_image),
+            Err(e) => {
+                let mut header = ContentItem::new("?");
+                if let Some(error_template_image) = error_template_image {
+                    header = match header.template_image(error_template_image) {
+                        Ok(header) => header,
+                        Err(never) => match never {},
+                    };
+                }
+                let mut menu = Menu(vec![header.into(), MenuItem::Sep]);
+                menu.extend(e.main_output(None));
+                menu
+            }
+        }
+    }
+}
+
+/// Members of this trait can be returned from a subcommand function annotated with [`bitbar::command`] or [`bitbar::fallback_command`].
+pub trait CommandOutput {
+    /// Reports any errors in this command output as macOS notifications.
+    fn report(self, cmd_name: &str);
+}
+
+impl CommandOutput for () {
+    fn report(self, _: &str) {}
+}
+
+impl<T: CommandOutput, E: fmt::Display> CommandOutput for Result<T, E> {
+    fn report(self, cmd_name: &str) {
+        match self {
+            Ok(x) => x.report(cmd_name),
+            Err(e) => {
+                notify(format!("{}: {}", cmd_name, e));
+                process::exit(1);
+            }
+        }
+    }
+}
+
+#[doc(hidden)] pub fn notify(body: impl fmt::Display) { // used in proc macro
+    //let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar")); //TODO uncomment when https://github.com/h4llow3En/mac-notification-sys/issues/8 is fixed
+    let _ = notify_rust::Notification::default()
+        .summary(&env!("CARGO_PKG_NAME"))
+        .sound_name("Funky")
+        .body(&body.to_string())
+        .show();
 }

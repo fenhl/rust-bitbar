@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 description = "Helper library for writing BitBar plugins"
@@ -10,10 +10,12 @@ repository = "https://github.com/fenhl/rust-bitbar"
 keywords = ["bitbar-plugin", "plugin", "macos", "menu-bar", "swiftbar"]
 
 [package.metadata.docs.rs]
-features = ["base64", "css-colors", "image", "serenity", "tokio", "url1"]
+features = ["assume-flavor", "base64", "css-colors", "image", "serenity", "tokio", "url1"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["tokio"]
+assume-flavor = []
 tokio = ["dep_tokio", "bitbar-derive/tokio"]
 tokio02 = ["dep_tokio02", "bitbar-derive/tokio02"]
 tokio03 = ["dep_tokio03", "bitbar-derive/tokio"]
@@ -22,6 +24,7 @@ tokio03 = ["dep_tokio03", "bitbar-derive/tokio"]
 css-color-parser = "0.1.2"
 inventory = "0.1" # used in proc macro
 notify-rust = "3" # used in proc macro
+semver = "1"
 structopt = "0.3" # used in proc macro
 url = "2"
 

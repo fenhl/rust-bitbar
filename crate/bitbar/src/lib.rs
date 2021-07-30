@@ -1,6 +1,8 @@
 #![deny(missing_docs, rust_2018_idioms, unused, unused_crate_dependencies, unused_import_braces, unused_qualifications, warnings)]
 #![forbid(unsafe_code)]
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 //! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) or [SwiftBar](https://swiftbar.app/) plugins in Rust.
 //!
 //! There are two main entry points:
@@ -80,10 +82,13 @@ use {
     },
 };
 #[cfg(feature = "url1")] use url1::Url as Url1;
-pub use bitbar_derive::{
-    command,
-    fallback_command,
-    main,
+pub use {
+    bitbar_derive::{
+        command,
+        fallback_command,
+        main,
+    },
+    crate::flavor::Flavor,
 };
 #[doc(hidden)] pub use { // used in proc macro
     inventory,
@@ -93,6 +98,8 @@ pub use bitbar_derive::{
 #[cfg(feature = "tokio")] #[doc(hidden)] pub use dep_tokio as tokio;
 #[cfg(feature = "tokio02")] #[doc(hidden)] pub use dep_tokio02 as tokio;
 #[cfg(feature = "tokio03")] #[doc(hidden)] pub use dep_tokio03 as tokio;
+
+pub mod flavor;
 
 #[derive(Debug)]
 /// A menu item's alternate mode or submenu.
@@ -124,6 +131,7 @@ impl IntoColor for Color {
 #[cfg(feature = "css-colors")]
 macro_rules! impl_into_color_for_css_color {
     ($t:ty) => {
+        #[cfg_attr(docsrs, doc(cfg(feature = "css-colors")))]
         impl IntoColor for $t {
             fn into_color(self) -> Result<Color, ColorParseError> {
                 Ok(self.to_string().parse()?)
@@ -138,6 +146,7 @@ macro_rules! impl_into_color_for_css_color {
 #[cfg(feature = "css-colors")] impl_into_color_for_css_color!(css_colors::HSLA);
 
 #[cfg(feature = "serenity")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serenity")))]
 impl IntoColor for serenity::utils::Colour {
     fn into_color(self) -> Result<Color, ColorParseError> {
         Ok(Color {
@@ -174,6 +183,7 @@ impl<'a> IntoUrl for &'a str {
 }
 
 #[cfg(feature = "url1")]
+#[cfg_attr(docsrs, doc(cfg(feature = "url1")))]
 impl IntoUrl for Url1 {
     fn into_url(self) -> Result<Url, url::ParseError> {
         Url::parse(self.as_str())
@@ -347,6 +357,7 @@ impl From<String> for Image {
 
 /// Converts a PNG file to a non-template image.
 #[cfg(feature = "base64")]
+#[cfg_attr(docsrs, doc(cfg(feature = "base64")))]
 impl From<Vec<u8>> for Image {
     fn from(input: Vec<u8>) -> Image {
         Image {
@@ -358,6 +369,7 @@ impl From<Vec<u8>> for Image {
 
 /// Converts a PNG file to a non-template image.
 #[cfg(feature = "base64")]
+#[cfg_attr(docsrs, doc(cfg(feature = "base64")))]
 impl<T: ?Sized + AsRef<[u8]>> From<&T> for Image {
     fn from(input: &T) -> Image {
         Image {
@@ -368,6 +380,7 @@ impl<T: ?Sized + AsRef<[u8]>> From<&T> for Image {
 }
 
 #[cfg(all(feature = "base64", feature = "image"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "base64", feature = "image"))))]
 impl TryFrom<DynamicImage> for Image {
     type Error = ImageError;
 
@@ -604,7 +617,7 @@ impl fmt::Display for Menu {
     }
 }
 
-/// Members of this trait can be returned from a main function annotated with [`bitbar::main`].
+/// Members of this trait can be returned from a main function annotated with [`main`].
 pub trait MainOutput {
     /// Converts this value into a [`Menu`], displaying the given template image in case of an error.
     fn main_output(self, error_template_image: Option<Image>) -> Menu;
@@ -635,7 +648,7 @@ impl<T: MainOutput, E: MainOutput> MainOutput for Result<T, E> {
     }
 }
 
-/// Members of this trait can be returned from a subcommand function annotated with [`bitbar::command`] or [`bitbar::fallback_command`].
+/// Members of this trait can be returned from a subcommand function annotated with [`command`] or [`fallback_command`].
 pub trait CommandOutput {
     /// Reports any errors in this command output as macOS notifications.
     fn report(self, cmd_name: &str);

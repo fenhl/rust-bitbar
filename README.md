@@ -16,5 +16,5 @@ If you have a BitBar plugin that uses this library, feel free to open a pull req
 
 [crates.io badge]: https://img.shields.io/crates/v/bitbar.svg?style=flat-square
 [crates.io link]: https://crates.io/crates/bitbar
-[docs.rs badge]: https://img.shields.io/badge/docs-online-ffffff.svg?style=flat-square
+[docs.rs badge]: https://img.shields.io/badge/docs-online-dddddd.svg?style=flat-square
 [docs.rs link]: https://docs.rs/bitbar

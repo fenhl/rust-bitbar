@@ -7,7 +7,7 @@ description = "Helper library for writing BitBar plugins"
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/fenhl/rust-bitbar"
-keywords = ["bitbar-plugin", "plugin", "macos", "menu-bar", "swiftbar"]
+keywords = ["plugin", "macos", "menu-bar", "swiftbar", "xbar"]
 
 [package.metadata.docs.rs]
 features = ["assume-flavor", "base64", "css-colors", "image", "serenity", "tokio", "url1"]

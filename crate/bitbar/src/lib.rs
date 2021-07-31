@@ -3,7 +3,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-//! This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) or [SwiftBar](https://swiftbar.app/) plugins in Rust.
+//! This is `bitbar`, a library crate which includes helpers for writing BitBar plugins in Rust. BitBar is a system that makes it easy to add menus to the macOS menu bar. There are two apps implementing the BitBar system: [SwiftBar](https://swiftbar.app/) and [xbar](https://xbarapp.com/). This crate supports both of them, as well as the discontinued original BitBar app.
 //!
 //! There are two main entry points:
 //!

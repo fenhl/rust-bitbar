@@ -1,8 +1,6 @@
-[![crates.io badge]][crates.io link]
+[![crates.io badge]][crates.io link] [![docs.rs badge]][docs.rs link]
 
-This is `bitbar`, a library crate which includes helpers for writing [BitBar](https://getbitbar.com/) plugins in Rust. The main feature is the `Menu` type whose `Display` implementation generates output that conforms to the [BitBar plugin API](https://github.com/matryer/bitbar#plugin-api).
-
-For a list of available Cargo features, see the crate-level documentation.
+This is `bitbar`, a library crate which includes helpers for writing BitBar plugins in Rust. BitBar is a system that makes it easy to add menus to the macOS menu bar. There are two apps implementing the BitBar system: [SwiftBar](https://swiftbar.app/) and [xbar](https://xbarapp.com/). This crate supports both of them, as well as the discontinued original BitBar app.
 
 # Example plugins
 
@@ -18,3 +16,5 @@ If you have a BitBar plugin that uses this library, feel free to open a pull req
 
 [crates.io badge]: https://img.shields.io/crates/v/bitbar.svg?style=flat-square
 [crates.io link]: https://crates.io/crates/bitbar
+[docs.rs badge]: https://img.shields.io/badge/docs-online-ffffff.svg?style=flat-square
+[docs.rs link]: https://docs.rs/bitbar

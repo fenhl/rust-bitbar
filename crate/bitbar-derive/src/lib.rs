@@ -101,7 +101,7 @@ pub fn fallback_command(_: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Annotate your `main` function with this.
 ///
-/// * It must take no arguments.
+/// * It can optionally take an argument of type `bitbar::Flavor`.
 /// * It must return a member of the `bitbar::MainOutput` trait.
 /// * It can be a `fn` or an `async fn`. In the latter case, `tokio`'s threaded runtime will be used. (This requires the `tokio` feature, which is on by default, or either of the `tokio02` or `tokio03` features, which are not.)
 ///
@@ -113,13 +113,19 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
         [] => quote!(::core::option::Option::None),
         [NestedMeta::Meta(Meta::NameValue(MetaNameValue { path, lit: Lit::Str(path_lit), ..}))]
         if path.get_ident().map_or(false, |arg| arg.to_string() == "error_template_image") => {
-            quote!(::core::option::Option::Some(::bitbar::Image::from(&include_bytes!(#path_lit)[..])))
+            quote!(::core::option::Option::Some(::bitbar::attr::Image::from(&include_bytes!(#path_lit)[..])))
         }
         _ => return TokenStream::from(quote!(compile_error!("unexpected bitbar::main arguments"))),
     };
     let main_fn = parse_macro_input!(item as ItemFn);
     let asyncness = &main_fn.sig.asyncness;
     let awaitness = asyncness.as_ref().map(|_| quote!(.await));
+    let inner_params = &main_fn.sig.inputs;
+    let inner_args = if inner_params.len() >= 1 {
+        quote!(::bitbar::Flavor::check())
+    } else {
+        quote!()
+    };
     #[cfg(not(any(feature = "tokio", feature = "tokio02")))] let (cmd_ret, cmd_awaitness) = (quote!(), quote!());
     #[cfg(any(feature = "tokio", feature = "tokio02"))] let (cmd_ret, cmd_awaitness) = (
         quote!(-> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ()>>>),
@@ -143,7 +149,7 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
                 ::std::process::exit(1)
             }
         } else {
-            print!("{}", ::bitbar::MainOutput::main_output(main_inner()#awaitness, #error_template_image));
+            print!("{}", ::bitbar::MainOutput::main_output(main_inner(#inner_args)#awaitness, #error_template_image));
         }
     });
     #[cfg(feature = "tokio02")] let wrapper_body = quote!({
@@ -177,7 +183,7 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
 
         inventory::collect!(Fallback);
 
-        #asyncness fn main_inner() #ret #inner_body
+        #asyncness fn main_inner(#inner_params) #ret #inner_body
 
         fn main() #wrapper_body
     })

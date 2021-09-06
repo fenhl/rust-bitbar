@@ -1,6 +1,6 @@
 [![crates.io badge]][crates.io link] [![docs.rs badge]][docs.rs link]
 
-This is `bitbar`, a library crate which includes helpers for writing BitBar plugins in Rust. BitBar is a system that makes it easy to add menus to the macOS menu bar. There are two apps implementing the BitBar system: [SwiftBar](https://swiftbar.app/) and [xbar](https://xbarapp.com/). This crate supports both of them, as well as the discontinued original BitBar app.
+This is `bitbar`, a library crate which includes helpers for writing BitBar plugins in Rust. BitBar is a system that makes it easy to add menus to the macOS menu bar. There are two apps implementing the BitBar system: [SwiftBar](https://swiftbar.app/) and [xbar](https://xbarapp.com/). This crate supports both of them, as well as [the discontinued original BitBar app](https://github.com/matryer/xbar/tree/a595e3bdbb961526803b60be6fd32dd0c667b6ec).
 
 # Example plugins
 

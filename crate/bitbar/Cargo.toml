@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 description = "Helper library for writing BitBar plugins"
@@ -10,7 +10,6 @@ repository = "https://github.com/fenhl/rust-bitbar"
 keywords = ["plugin", "macos", "menu-bar", "swiftbar", "xbar"]
 
 [package.metadata.docs.rs]
-default-target = "x86_64-apple-darwin"
 features = ["assume-flavor", "base64", "css-colors", "image", "serenity", "tokio", "url1"]
 rustdoc-args = ["--cfg", "docsrs"]
 
@@ -35,7 +34,7 @@ optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.5.1"
+version = "=0.5.2"
 
 [dependencies.css-colors]
 version = "1"

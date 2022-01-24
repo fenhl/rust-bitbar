@@ -8,9 +8,9 @@ Documentation fixes.
 
 # 0.5.0
 
+* **Breaking:** Types used for configuring menu items have been moved to a new `attr` module
+* **Breaking:** `Params` is now an opaque type
 * `main` functions may optionally take a `Flavor` argument
-* Types used for configuring menu items have been moved to a new `attr` module
-* `Params` is now an opaque type
 * New `ContentItem::size` method to set font size
 * SwiftBar only: Support for commands with more than 5 parameters
 * SwiftBar only: Support for using different colors depending on whether the system is in dark mode
@@ -23,8 +23,8 @@ Documentation fixes.
 
 # 0.4.3
 
-* The `tokio` feature now uses `tokio` 1; added the `tokio03` feature to use `tokio` 0.3 instead
-* Upgraded the optional `serenity` dependency to 0.10
+* **Breaking:** The `tokio` feature now uses `tokio` 1; added the `tokio03` feature to use `tokio` 0.3 instead
+* **Breaking:** Upgraded the optional `serenity` dependency from 0.9 to 0.10
 * `command` functions may be async (requires one of the tokio features)
 * Added the `fallback_command` attribute macro
 * Added the `MainOutput` trait; `main` functions may return any member of it
@@ -43,6 +43,7 @@ Documentation fixes.
 
 # 0.4.0
 
+* **Breaking:** Upgraded the optional `serenity` dependency from 0.7 to 0.9
 * Added the `main` and `command` attribute macros
 * Added `Extend<A>` implementations for `Menu` (where `A: Into<MenuItem>`)
 * Added an `IntoIterator` implementation for `Menu`

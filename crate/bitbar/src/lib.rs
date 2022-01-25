@@ -288,6 +288,13 @@ impl fmt::Display for MenuItem {
 #[derive(Debug, Default)]
 pub struct Menu(pub Vec<MenuItem>);
 
+impl Menu {
+    /// Adds a menu item to the bottom of the menu.
+    pub fn push(&mut self, item: impl Into<MenuItem>) {
+        self.0.push(item.into());
+    }
+}
+
 impl<A: Into<MenuItem>> FromIterator<A> for Menu {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Menu {
         Menu(iter.into_iter().map(Into::into).collect())

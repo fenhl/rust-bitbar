@@ -1,3 +1,10 @@
+# 0.6.0
+
+* **Breaking:** `command` functions now take any number of parameters that will be parsed from command-line args; use `#[command(varargs)]` to take a `Vec<String>` instead
+* **Breaking:** The `fallback_command` function now takes the command name as a `String` and the remaining arguments as a `Vec<String>`
+* `command` functions now generate functions that return `Params`
+* Added a `push` method to `Menu`
+
 # 0.5.2
 
 Documentation fixes.

@@ -157,6 +157,13 @@ pub struct Params {
     pub(crate) params: Vec<String>,
 }
 
+impl Params {
+    #[doc(hidden)] // used in proc macro
+    pub fn new(cmd: String, params: Vec<String>) -> Self {
+        Self { cmd, params }
+    }
+}
+
 macro_rules! params_from {
     ($n:literal$(, $elt:ident: $t:ident)*) => {
         impl<T: ToString> From<[T; $n]> for Params {

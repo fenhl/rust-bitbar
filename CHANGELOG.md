@@ -1,4 +1,8 @@
-# 0.7.0
+# 0.7.1 (`cargo-bitbar` 0.1.1)
+
+* Support for trailing stream separators in the newest SwiftBar beta (see [swiftbar/SwiftBar#273](https://github.com/swiftbar/SwiftBar/issues/273) for details)
+
+# 0.7.0 (`cargo-bitbar` 0.1.0)
 
 * **Breaking:** The `MainOutput` trait now prints the menu instead of returning it
 * `cargo bitbar` is a new `cargo` subcommand that can add plugin metadata to binary SwiftBar plugins

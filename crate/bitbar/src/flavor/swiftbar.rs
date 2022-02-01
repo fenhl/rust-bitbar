@@ -20,6 +20,7 @@ use {
         },
     },
 };
+#[cfg(feature = "assume-flavor")] use static_assertions::const_assert;
 #[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))] use {
     std::pin::Pin,
     futures::{
@@ -29,26 +30,44 @@ use {
     crate::AsyncMainOutput,
 };
 
+/// The highest build number
+#[cfg(feature = "assume-flavor")] const MAX_BUILD: usize = 399;
+
+macro_rules! build_ge {
+    ($swiftbar:expr, $build:expr) => {{
+        #[cfg(feature = "assume-flavor")] const_assert!($build <= MAX_BUILD);
+        $swiftbar.build >= $build
+    }};
+}
+
 /// A type-safe handle for [SwiftBar](https://swiftbar.app/)-specific features.
 ///
 /// Some SwiftBar-specific features are currently unsupported:
 ///
 /// * [Script metadata](https://github.com/swiftbar/SwiftBar#script-metadata) is unsupported since `cargo` does not support adding metadata to binaries it produces. You will have to [add any metadata via `xattr`](https://github.com/swiftbar/SwiftBar#metadata-for-binary-plugins).
 #[derive(Debug, Clone, Copy)]
-pub struct SwiftBar(()); // `()` field to make sure the type can't be instantiated outside of this module
+pub struct SwiftBar {
+    build: usize,
+}
 
 impl SwiftBar {
     /// Checks whether the plugins is running in SwiftBar by checking environment variables.
     /// If it does, returns a handle allowing use of SwiftBar-specific features.
     pub fn check() -> Option<Self> {
-        env::var_os("SWIFTBAR").map(|_| Self(()))
+        Some(Self {
+            build: env::var("SWIFTBAR_BUILD").ok()?.parse().ok()?,
+        })
     }
 
     #[cfg(feature = "assume-flavor")]
     #[cfg_attr(docsrs, doc(cfg(feature = "assume-flavor")))]
     /// Returns a handle allowing use of SwiftBar-specific features **without checking whether the plugin is actually running inside SwiftBar**.
-    /// If the plugin is actually running in a different implementation, this may lead to incorrect behavior.
-    pub fn assume() -> Self { Self(()) }
+    /// If the plugin is actually running in a different implementation or an outdated version of SwiftBar, this may lead to incorrect behavior.
+    pub fn assume() -> Self {
+        Self {
+            build: MAX_BUILD,
+        }
+    }
 
     /// Returns the SwiftBar version on which the plugin is running by checking environment variables.
     pub fn running_version(&self) -> Result<Version, VersionCheckError> {
@@ -210,23 +229,42 @@ impl From<VersionCheckError> for Menu {
 
 /// A type that [streams](https://github.com/swiftbar/SwiftBar#streamable) menus from an iterator.
 ///
-/// Note that the [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) item `swiftbar.type` must be set to `streamable` for this to work. The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add metadata to the plugin.
+/// Note that the following [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) items must be set for this to work:
+/// * `<swiftbar.type>streamable</swiftbar.type>`
+/// * `<swiftbar.useTrailingStreamSeparator>true</swiftbar.useTrailingStreamSeparator>`
+///
+/// The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add this metadata to the plugin. First, add this to your *workspace* manifest:
+///
+/// ```toml
+/// [workspace.metadata.bitbar]
+/// type = "streamable"
+/// ```
+///
+/// Then, after building the plugin, run `cargo bitbar attr target/release/my-bitbar-plugin`.
 pub struct BlockingStream<'a, I: MainOutput> {
+    swiftbar: SwiftBar,
     inner: Box<dyn Iterator<Item = I> + 'a>,
 }
 
 impl<'a, I: MainOutput> BlockingStream<'a, I> {
     #[allow(missing_docs)]
-    pub fn new(_: SwiftBar, iter: impl IntoIterator<Item = I> + 'a) -> Self {
-        Self { inner: Box::new(iter.into_iter()) }
+    pub fn new(swiftbar: SwiftBar, iter: impl IntoIterator<Item = I> + 'a) -> Self {
+        Self { swiftbar, inner: Box::new(iter.into_iter()) }
     }
 }
 
 impl<'a, I: MainOutput> MainOutput for BlockingStream<'a, I> {
     fn main_output(self, error_template_image: Option<Image>) {
-        for elt in self.inner {
-            println!("~~~");
-            elt.main_output(error_template_image.clone());
+        if build_ge!(self.swiftbar, 399) {
+            for elt in self.inner {
+                elt.main_output(error_template_image.clone());
+                println!("~~~");
+            }
+        } else {
+            for elt in self.inner {
+                println!("~~~");
+                elt.main_output(error_template_image.clone());
+            }
         }
     }
 }
@@ -235,8 +273,20 @@ impl<'a, I: MainOutput> MainOutput for BlockingStream<'a, I> {
 #[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
 /// A type that [streams](https://github.com/swiftbar/SwiftBar#streamable) menus from a stream (async iterator).
 ///
-/// Note that the [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) item `swiftbar.type` must be set to `streamable` for this to work. The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add metadata to the plugin.
+/// Note that the following [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) items must be set for this to work:
+/// * `<swiftbar.type>streamable</swiftbar.type>`
+/// * `<swiftbar.useTrailingStreamSeparator>true</swiftbar.useTrailingStreamSeparator>`
+///
+/// The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add this metadata to the plugin. First, add this to your *workspace* manifest:
+///
+/// ```toml
+/// [workspace.metadata.bitbar]
+/// type = "streamable"
+/// ```
+///
+/// Then, after building the plugin, run `cargo bitbar attr target/release/my-bitbar-plugin`.
 pub struct Stream<'a, I: AsyncMainOutput<'a> + 'a> {
+    swiftbar: SwiftBar,
     inner: Pin<Box<dyn futures::stream::Stream<Item = I> + 'a>>,
 }
 
@@ -244,8 +294,8 @@ pub struct Stream<'a, I: AsyncMainOutput<'a> + 'a> {
 #[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
 impl<'a, I: AsyncMainOutput<'a> + 'a> Stream<'a, I> {
     #[allow(missing_docs)]
-    pub fn new(_: SwiftBar, stream: impl futures::stream::Stream<Item = I> + 'a) -> Self {
-        Self { inner: Box::pin(stream) }
+    pub fn new(swiftbar: SwiftBar, stream: impl futures::stream::Stream<Item = I> + 'a) -> Self {
+        Self { swiftbar, inner: Box::pin(stream) }
     }
 }
 
@@ -253,11 +303,20 @@ impl<'a, I: AsyncMainOutput<'a> + 'a> Stream<'a, I> {
 #[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
 impl<'a, I: AsyncMainOutput<'a> + 'a> AsyncMainOutput<'a> for Stream<'a, I> {
     fn main_output(mut self, error_template_image: Option<Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>> {
-        Box::pin(async move {
-            while let Some(elt) = self.inner.next().await {
-                println!("~~~");
-                elt.main_output(error_template_image.clone()).await;
-            }
-        })
+        if build_ge!(self.swiftbar, 399) {
+            Box::pin(async move {
+                while let Some(elt) = self.inner.next().await {
+                    elt.main_output(error_template_image.clone()).await;
+                    println!("~~~");
+                }
+            })
+        } else {
+            Box::pin(async move {
+                while let Some(elt) = self.inner.next().await {
+                    println!("~~~");
+                    elt.main_output(error_template_image.clone()).await;
+                }
+            })
+        }
     }
 }

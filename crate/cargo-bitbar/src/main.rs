@@ -121,7 +121,10 @@ impl BitBarMetadata {
         if !run_in_bash { writeln!(&mut buf, "# <swiftbar.runInBash>false</swiftbar.runInBash>")?; }
         match kind {
             PluginKind::Default => {}
-            PluginKind::Streamable => { writeln!(&mut buf, "# <swiftbar.type>streamable</swiftbar.type>")?; }
+            PluginKind::Streamable => {
+                writeln!(&mut buf, "# <swiftbar.type>streamable</swiftbar.type>")?;
+                writeln!(&mut buf, "# <swiftbar.useTrailingStreamSeparator>true</swiftbar.useTrailingStreamSeparator>")?;
+            }
         }
         if !environment.is_empty() {
             writeln!(&mut buf, "# <swiftbar.environment>[{}]</swiftbar.environment", environment.into_iter().map(|(var, default_value)| format!("{}:{}", var, default_value)).join(", "))?;

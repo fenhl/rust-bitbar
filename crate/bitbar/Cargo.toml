@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 description = "Helper library for writing BitBar plugins"
@@ -15,7 +15,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["tokio"]
-assume-flavor = []
+assume-flavor = ["static_assertions"]
 tokio = ["dep_tokio", "futures", "bitbar-derive/tokio"]
 tokio02 = ["dep_tokio02", "futures", "bitbar-derive/tokio02"]
 tokio03 = ["dep_tokio03", "futures", "bitbar-derive/tokio"]
@@ -34,7 +34,7 @@ optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.7.0"
+version = "=0.7.1"
 
 [dependencies.css-colors]
 version = "1"
@@ -55,6 +55,10 @@ features = [
     "model", "rustls_backend", #TODO remove once https://github.com/serenity-rs/serenity/issues/763 is fixed
     "utils"
 ]
+optional = true
+
+[dependencies.static_assertions]
+version = "1"
 optional = true
 
 [dependencies.dep_tokio] # used in proc macro

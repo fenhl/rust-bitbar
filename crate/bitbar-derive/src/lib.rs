@@ -36,7 +36,7 @@ use {
 ///
 /// Commands may take any number of parameters implementing `FromStr` (with errors implementing `Display`) and `ToString`, and should return `Result<(), Error>`, where `Error` is any type that implements `Display`. If a command errors, `bitbar` will attempt to send a macOS notification containing the error message.
 ///
-/// Alternatively, use this arrtibute as `#[command(varargs)] and define the command function with a single parameter of type `Vec<String>`.
+/// Alternatively, use this arrtibute as `#[command(varargs)]` and define the command function with a single parameter of type `Vec<String>`.
 ///
 /// The `command` attribute generates a function that can be called with arguments of references to the original parameter types to obtain a `std::io::Result<Params>`. If the command has more than 5 parameters or is declared with `#[command(varargs)]`, the function takes an additional first parameter of type `SwiftBar`.
 ///

@@ -30,7 +30,7 @@ use {
     crate::AsyncMainOutput,
 };
 
-/// The highest build number
+/// The highest build number checked for conditional features.
 #[cfg(feature = "assume-flavor")] const MAX_BUILD: usize = 399;
 
 macro_rules! build_ge {

@@ -10,13 +10,23 @@ use {
     semver::Version,
     crate::{
         ContentItem,
+        MainOutput,
         Menu,
         MenuItem,
         attr::{
             Color,
+            Image,
             Params,
         },
     },
+};
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))] use {
+    std::pin::Pin,
+    futures::{
+        future::Future,
+        stream::StreamExt as _,
+    },
+    crate::AsyncMainOutput,
 };
 
 /// A type-safe handle for [SwiftBar](https://swiftbar.app/)-specific features.
@@ -38,7 +48,7 @@ impl SwiftBar {
     #[cfg_attr(docsrs, doc(cfg(feature = "assume-flavor")))]
     /// Returns a handle allowing use of SwiftBar-specific features **without checking whether the plugin is actually running inside SwiftBar**.
     /// If the plugin is actually running in a different implementation, this may lead to incorrect behavior.
-    pub fn assume() -> Self { SwiftBar(()) }
+    pub fn assume() -> Self { Self(()) }
 
     /// Returns the SwiftBar version on which the plugin is running by checking environment variables.
     pub fn running_version(&self) -> Result<Version, VersionCheckError> {
@@ -195,5 +205,59 @@ impl From<VersionCheckError> for Menu {
             }
         }
         Menu(menu)
+    }
+}
+
+/// A type that [streams](https://github.com/swiftbar/SwiftBar#streamable) menus from an iterator.
+///
+/// Note that the [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) item `swiftbar.type` must be set to `streamable` for this to work. The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add metadata to the plugin.
+pub struct BlockingStream<'a, I: MainOutput> {
+    inner: Box<dyn Iterator<Item = I> + 'a>,
+}
+
+impl<'a, I: MainOutput> BlockingStream<'a, I> {
+    #[allow(missing_docs)]
+    pub fn new(_: SwiftBar, iter: impl IntoIterator<Item = I> + 'a) -> Self {
+        Self { inner: Box::new(iter.into_iter()) }
+    }
+}
+
+impl<'a, I: MainOutput> MainOutput for BlockingStream<'a, I> {
+    fn main_output(self, error_template_image: Option<Image>) {
+        for elt in self.inner {
+            println!("~~~");
+            elt.main_output(error_template_image.clone());
+        }
+    }
+}
+
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+/// A type that [streams](https://github.com/swiftbar/SwiftBar#streamable) menus from a stream (async iterator).
+///
+/// Note that the [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) item `swiftbar.type` must be set to `streamable` for this to work. The [`cargo-bitbar`](https://crates.io/crates/cargo-bitbar) crate can be used to add metadata to the plugin.
+pub struct Stream<'a, I: AsyncMainOutput<'a> + 'a> {
+    inner: Pin<Box<dyn futures::stream::Stream<Item = I> + 'a>>,
+}
+
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+impl<'a, I: AsyncMainOutput<'a> + 'a> Stream<'a, I> {
+    #[allow(missing_docs)]
+    pub fn new(_: SwiftBar, stream: impl futures::stream::Stream<Item = I> + 'a) -> Self {
+        Self { inner: Box::pin(stream) }
+    }
+}
+
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+impl<'a, I: AsyncMainOutput<'a> + 'a> AsyncMainOutput<'a> for Stream<'a, I> {
+    fn main_output(mut self, error_template_image: Option<Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>> {
+        Box::pin(async move {
+            while let Some(elt) = self.inner.next().await {
+                println!("~~~");
+                elt.main_output(error_template_image.clone()).await;
+            }
+        })
     }
 }

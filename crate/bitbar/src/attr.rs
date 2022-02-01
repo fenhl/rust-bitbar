@@ -218,7 +218,7 @@ impl<T: ToString> TryFrom<Vec<T>> for Params {
                 cmd: v.remove(0).to_string(),
                 params: v.into_iter().map(|x| x.to_string()).collect(),
             }),
-            _ => Err(v)
+            _ => Err(v),
         }
     }
 }
@@ -241,7 +241,7 @@ impl Command {
     pub fn terminal(args: impl Into<Params>) -> Command {
         Command {
             params: args.into(),
-            terminal: true
+            terminal: true,
         }
     }
 
@@ -251,7 +251,7 @@ impl Command {
     pub fn try_from<P: TryInto<Params>>(args: P) -> Result<Command, P::Error> {
         Ok(Command {
             params: args.try_into()?,
-            terminal: false
+            terminal: false,
         })
     }
 
@@ -259,7 +259,7 @@ impl Command {
     pub fn try_terminal<P: TryInto<Params>>(args: P) -> Result<Command, P::Error> {
         Ok(Command {
             params: args.try_into()?,
-            terminal: true
+            terminal: true,
         })
     }
 }
@@ -269,18 +269,18 @@ impl<P: Into<Params>> From<P> for Command {
     fn from(args: P) -> Command {
         Command {
             params: args.into(),
-            terminal: false
+            terminal: false,
         }
     }
 }
 
 /// Used by `ContentItem::image` and `ContentItem::template_image`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Image {
     /// The base64-encoded image data.
     pub base64_data: String,
     /// If this is `true`, the image will be used with BitBar's `templateImage=` instead of `image=`.
-    pub is_template: bool
+    pub is_template: bool,
 }
 
 impl Image {
@@ -297,7 +297,7 @@ impl From<String> for Image {
     fn from(base64_data: String) -> Image {
         Image {
             base64_data,
-            is_template: false
+            is_template: false,
         }
     }
 }
@@ -309,7 +309,7 @@ impl From<Vec<u8>> for Image {
     fn from(input: Vec<u8>) -> Image {
         Image {
             base64_data: base64::encode(&input),
-            is_template: false
+            is_template: false,
         }
     }
 }
@@ -321,7 +321,7 @@ impl<T: ?Sized + AsRef<[u8]>> From<&T> for Image {
     fn from(input: &T) -> Image {
         Image {
             base64_data: base64::encode(input),
-            is_template: false
+            is_template: false,
         }
     }
 }

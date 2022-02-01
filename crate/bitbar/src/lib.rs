@@ -55,6 +55,10 @@ use {
     },
     url::Url,
 };
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))] use std::{
+    future::Future,
+    pin::Pin,
+};
 pub use {
     bitbar_derive::{
         command,
@@ -328,17 +332,19 @@ impl fmt::Display for Menu {
 
 /// Members of this trait can be returned from a main function annotated with [`main`].
 pub trait MainOutput {
-    /// Converts this value into a [`Menu`], displaying the given template image in case of an error.
-    fn main_output(self, error_template_image: Option<attr::Image>) -> Menu;
+    /// Displays this value as a menu, using the given template image in case of an error.
+    fn main_output(self, error_template_image: Option<attr::Image>);
 }
 
 impl<T: Into<Menu>> MainOutput for T {
-    fn main_output(self, _: Option<attr::Image>) -> Menu { self.into() }
+    fn main_output(self, _: Option<attr::Image>) {
+        print!("{}", self.into());
+    }
 }
 
 /// In the `Err` case, the menu will be prefixed with a menu item displaying the `error_template_image` and the text `?`.
 impl<T: MainOutput, E: MainOutput> MainOutput for Result<T, E> {
-    fn main_output(self, error_template_image: Option<attr::Image>) -> Menu {
+    fn main_output(self, error_template_image: Option<attr::Image>) {
         match self {
             Ok(x) => x.main_output(error_template_image),
             Err(e) => {
@@ -349,11 +355,28 @@ impl<T: MainOutput, E: MainOutput> MainOutput for Result<T, E> {
                         Err(never) => match never {},
                     };
                 }
-                let mut menu = Menu(vec![header.into(), MenuItem::Sep]);
-                menu.extend(e.main_output(None));
-                menu
+                print!("{}", Menu(vec![header.into(), MenuItem::Sep]));
+                e.main_output(None);
             }
         }
+    }
+}
+
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+/// Members of this trait can be returned from a main function annotated with [`main`].
+pub trait AsyncMainOutput<'a> {
+    /// Displays this value as a menu, using the given template image in case of an error.
+    fn main_output(self, error_template_image: Option<attr::Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>>;
+}
+
+#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+impl<'a, T: MainOutput + 'a> AsyncMainOutput<'a> for T {
+    fn main_output(self, error_template_image: Option<attr::Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>> {
+        Box::pin(async move {
+            MainOutput::main_output(self, error_template_image);
+        })
     }
 }
 

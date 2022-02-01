@@ -194,17 +194,22 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
     };
     let main_fn = parse_macro_input!(item as ItemFn);
     let asyncness = &main_fn.sig.asyncness;
-    let awaitness = asyncness.as_ref().map(|_| quote!(.await));
     let inner_params = &main_fn.sig.inputs;
     let inner_args = if inner_params.len() >= 1 {
         quote!(::bitbar::Flavor::check())
     } else {
         quote!()
     };
-    #[cfg(not(any(feature = "tokio", feature = "tokio02")))] let (cmd_ret, cmd_awaitness) = (quote!(), quote!());
-    #[cfg(any(feature = "tokio", feature = "tokio02"))] let (cmd_ret, cmd_awaitness) = (
+    #[cfg(not(any(feature = "tokio", feature = "tokio02")))] let (cmd_ret, cmd_awaitness, wrapper_body) = (
+        quote!(),
+        quote!(),
+        quote!(::bitbar::MainOutput::main_output(main_inner(#inner_args), #error_template_image);),
+    );
+    #[cfg(any(feature = "tokio", feature = "tokio02"))] let awaitness = asyncness.as_ref().map(|_| quote!(.await));
+    #[cfg(any(feature = "tokio", feature = "tokio02"))] let (cmd_ret, cmd_awaitness, wrapper_body) = (
         quote!(-> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ()>>>),
         quote!(.await),
+        quote!(::bitbar::AsyncMainOutput::main_output(main_inner(#inner_args)#awaitness, #error_template_image).await;),
     );
     let wrapper_body = quote!({
         //TODO set up a more friendly panic hook (similar to human-panic but rendering the panic message as a menu)
@@ -220,7 +225,7 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
                 ::std::process::exit(1)
             }
         } else {
-            print!("{}", ::bitbar::MainOutput::main_output(main_inner(#inner_args)#awaitness, #error_template_image));
+            #wrapper_body
         }
     });
     #[cfg(feature = "tokio02")] let wrapper_body = quote!({

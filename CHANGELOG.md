@@ -1,3 +1,10 @@
+# 0.7.0
+
+* **Breaking:** The `MainOutput` trait now prints the menu instead of returning it
+* `cargo bitbar` is a new `cargo` subcommand that can add plugin metadata to binary SwiftBar plugins
+* Support for streamable SwiftBar plugins via `bitbar::flavor::swiftbar::BlockingStream` and (with one of the tokio features) `bitbar::flavor::swiftbar::Stream`
+* New `AsyncMainOutput` trait if printing the menu requires `async` (requires one of the tokio features)
+
 # 0.6.0
 
 * **Breaking:** `command` functions now take any number of parameters that will be parsed from command-line args; use `#[command(varargs)]` to take a `Vec<String>` instead

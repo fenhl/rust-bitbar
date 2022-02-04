@@ -5,9 +5,14 @@ use {
         borrow::Cow,
         collections::BTreeMap,
         env,
+        io,
+        iter,
+        path::Path,
         sync::Arc,
     },
+    open::that as open,
     semver::Version,
+    url::Url,
     crate::{
         ContentItem,
         MainOutput,
@@ -16,6 +21,7 @@ use {
         attr::{
             Color,
             Image,
+            IntoUrl,
             Params,
         },
     },
@@ -67,6 +73,15 @@ impl SwiftBar {
         Self {
             build: MAX_BUILD,
         }
+    }
+
+    /// The name of the plugin, including refresh time and file extension, as used in [`swiftbar:` URLs](https://github.com/swiftbar/SwiftBar#url-scheme).
+    pub fn plugin_name(&self) -> Result<String, PluginNameError> {
+        Ok(Path::new(&env::var_os("SWIFTBAR_PLUGIN_PATH").ok_or(PluginNameError::Env)?)
+            .file_name().ok_or(PluginNameError::NoFileName)?
+            .to_str().ok_or(PluginNameError::NonUtf8FileName)?
+            .to_owned()
+        )
     }
 
     /// Returns the SwiftBar version on which the plugin is running by checking environment variables.
@@ -224,6 +239,108 @@ impl From<VersionCheckError> for Menu {
             }
         }
         Menu(menu)
+    }
+}
+
+/// An error that can occur when checking the running SwiftBar plugin name.
+#[derive(Debug, Clone)]
+pub enum PluginNameError {
+    /// The `SWIFTBAR_PLUGIN_PATH` environment variable was unset
+    Env,
+    /// The `SWIFTBAR_PLUGIN_PATH` environment variable did not end in a file name
+    NoFileName,
+    /// The file name was not valid UTF-8
+    NonUtf8FileName,
+}
+
+impl From<PluginNameError> for Menu {
+    fn from(e: PluginNameError) -> Menu {
+        let mut menu = vec![MenuItem::new("Error checking running SwiftBar plugin name")];
+        match e {
+            PluginNameError::Env => menu.push(MenuItem::new("missing `SWIFTBAR_PLUGIN_PATH` environment variable")),
+            PluginNameError::NoFileName => menu.push(MenuItem::new("no filename in `SWIFTBAR_PLUGIN_PATH` environment variable")),
+            PluginNameError::NonUtf8FileName => menu.push(MenuItem::new("plugin filename is not valid UTF-8")),
+        }
+        Menu(menu)
+    }
+}
+
+/// A SwiftBar notification that can be opened as a URL.
+pub struct Notification {
+    plugin_name: String,
+    title: Option<String>,
+    subtitle: Option<String>,
+    body: Option<String>,
+    href: Option<Url>,
+    silent: bool,
+}
+
+impl Notification {
+    /// Creates a new notification with default options.
+    ///
+    /// Call methods on the returned instance to configure it.
+    pub fn new(swiftbar: SwiftBar) -> Result<Self, PluginNameError> {
+        Ok(Self {
+            plugin_name: swiftbar.plugin_name()?,
+            title: None,
+            subtitle: None,
+            body: None,
+            href: None,
+            silent: false,
+        })
+    }
+
+    /// Sets the title for this notification.
+    pub fn title(mut self, title: impl ToString) -> Self {
+        self.title = Some(title.to_string());
+        self
+    }
+
+    /// Sets the subtitle for this notification.
+    pub fn subtitle(mut self, subtitle: impl ToString) -> Self {
+        self.subtitle = Some(subtitle.to_string());
+        self
+    }
+
+    /// Sets the text for this notification.
+    pub fn body(mut self, body: impl ToString) -> Self {
+        self.body = Some(body.to_string());
+        self
+    }
+
+    /// Adds an URL that will be opened when this notification is clicked.
+    pub fn href(mut self, href: impl IntoUrl) -> Result<Self, url::ParseError> {
+        self.href = Some(href.into_url()?);
+        Ok(self)
+    }
+
+    /// Disables sound for this notification.
+    pub fn silent(mut self) -> Self {
+        self.silent = true;
+        self
+    }
+
+    /// Displays this notification.
+    pub fn send(&self) -> io::Result<()> {
+        open(self.into_url().expect("failed to build SwiftBar notification URL").as_str())
+    }
+}
+
+impl IntoUrl for Notification {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        (&self).into_url()
+    }
+}
+
+impl<'a> IntoUrl for &'a Notification {
+    fn into_url(self) -> Result<Url, url::ParseError> {
+        Url::parse_with_params("swiftbar://notify", iter::once(("plugin", &*self.plugin_name))
+            .chain(self.title.as_deref().map(|title| ("title", title)))
+            .chain(self.subtitle.as_deref().map(|subtitle| ("subtitle", subtitle)))
+            .chain(self.body.as_deref().map(|body| ("body", body)))
+            .chain(self.href.as_ref().map(|href| ("href", href.as_str())))
+            .chain(self.silent.then(|| ("silent", "true")))
+        )
     }
 }
 

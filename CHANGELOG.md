@@ -1,3 +1,8 @@
+# 0.7.2
+
+* New `SwiftBar::plugin_name` method
+* New `swiftbar::Notification` type
+
 # 0.7.1 (`cargo-bitbar` 0.1.1)
 
 * Support for trailing stream separators in the newest SwiftBar beta (see [swiftbar/SwiftBar#273](https://github.com/swiftbar/SwiftBar/issues/273) for details)

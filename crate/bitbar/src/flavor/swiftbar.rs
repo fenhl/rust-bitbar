@@ -4,6 +4,7 @@ use {
     std::{
         borrow::Cow,
         collections::BTreeMap,
+        convert::TryInto,
         env,
         io,
         iter,
@@ -12,6 +13,7 @@ use {
     },
     open::that as open,
     semver::Version,
+    thiserror::Error,
     url::Url,
     crate::{
         ContentItem,
@@ -20,6 +22,7 @@ use {
         MenuItem,
         attr::{
             Color,
+            Command,
             Image,
             IntoUrl,
             Params,
@@ -37,7 +40,7 @@ use {
 };
 
 /// The highest build number checked for conditional features.
-#[cfg(feature = "assume-flavor")] const MAX_BUILD: usize = 399;
+#[cfg(feature = "assume-flavor")] const MAX_BUILD: usize = 402;
 
 macro_rules! build_ge {
     ($swiftbar:expr, $build:expr) => {{
@@ -208,18 +211,12 @@ impl Attrs {
 }
 
 /// An error that can occur when checking the running SwiftBar version.
-#[derive(Debug, Clone)]
+#[derive(Debug, Error, Clone)]
 pub enum VersionCheckError {
     /// The `SWIFTBAR_VERSION` environment variable was unset or not valid UTF-8
-    Env(env::VarError),
+    #[error(transparent)] Env(#[from] env::VarError),
     /// The `SWIFTBAR_VERSION` environment variable was not a valid semantic version
-    Parse(Arc<semver::Error>),
-}
-
-impl From<env::VarError> for VersionCheckError {
-    fn from(e: env::VarError) -> VersionCheckError {
-        VersionCheckError::Env(e)
-    }
+    #[error(transparent)] Parse(Arc<semver::Error>),
 }
 
 impl From<semver::Error> for VersionCheckError {
@@ -243,23 +240,49 @@ impl From<VersionCheckError> for Menu {
 }
 
 /// An error that can occur when checking the running SwiftBar plugin name.
-#[derive(Debug, Clone)]
+#[derive(Debug, Error, Clone)]
 pub enum PluginNameError {
     /// The `SWIFTBAR_PLUGIN_PATH` environment variable was unset
+    #[error("missing `SWIFTBAR_PLUGIN_PATH` environment variable")]
     Env,
     /// The `SWIFTBAR_PLUGIN_PATH` environment variable did not end in a file name
+    #[error("no filename in `SWIFTBAR_PLUGIN_PATH` environment variable")]
     NoFileName,
     /// The file name was not valid UTF-8
+    #[error("plugin filename is not valid UTF-8")]
     NonUtf8FileName,
 }
 
 impl From<PluginNameError> for Menu {
     fn from(e: PluginNameError) -> Menu {
-        let mut menu = vec![MenuItem::new("Error checking running SwiftBar plugin name")];
+        Menu(vec![
+            MenuItem::new("Error checking running SwiftBar plugin name"),
+            MenuItem::new(e.to_string()),
+        ])
+    }
+}
+
+/// An error that can occur in [`Notification::command`].
+#[derive(Debug, Error, Clone)]
+pub enum NotificationCommandError<C: TryInto<Command>>
+where C::Error: std::error::Error {
+    /// Converting the parameter to a `Command` failed
+    #[error(transparent)] Command(C::Error),
+    /// Running commands on notification click is only supported on SwiftBar 1.4.3 beta 4 or newer
+    #[error("running commands on notification click is only supported on SwiftBar 1.4.3 beta 4 or newer")]
+    UnsupportedSwiftBarVersion,
+}
+
+impl<C: TryInto<Command>> From<NotificationCommandError<C>> for Menu
+where C::Error: std::error::Error {
+    fn from(e: NotificationCommandError<C>) -> Menu {
+        let mut menu = vec![MenuItem::new("Error adding command to notification")];
         match e {
-            PluginNameError::Env => menu.push(MenuItem::new("missing `SWIFTBAR_PLUGIN_PATH` environment variable")),
-            PluginNameError::NoFileName => menu.push(MenuItem::new("no filename in `SWIFTBAR_PLUGIN_PATH` environment variable")),
-            PluginNameError::NonUtf8FileName => menu.push(MenuItem::new("plugin filename is not valid UTF-8")),
+            NotificationCommandError::Command(e) => {
+                menu.push(MenuItem::new(format!("error building command: {}", e)));
+                menu.push(MenuItem::new(format!("{:?}", e)));
+            }
+            NotificationCommandError::UnsupportedSwiftBarVersion => menu.push(MenuItem::new("running commands on notification click is only supported on SwiftBar 1.4.3 beta 4 or newer")),
         }
         Menu(menu)
     }
@@ -267,11 +290,13 @@ impl From<PluginNameError> for Menu {
 
 /// A SwiftBar notification that can be opened as a URL.
 pub struct Notification {
+    swiftbar: SwiftBar,
     plugin_name: String,
     title: Option<String>,
     subtitle: Option<String>,
     body: Option<String>,
     href: Option<Url>,
+    command: Option<Command>,
     silent: bool,
 }
 
@@ -281,11 +306,13 @@ impl Notification {
     /// Call methods on the returned instance to configure it.
     pub fn new(swiftbar: SwiftBar) -> Result<Self, PluginNameError> {
         Ok(Self {
+            swiftbar,
             plugin_name: swiftbar.plugin_name()?,
             title: None,
             subtitle: None,
             body: None,
             href: None,
+            command: None,
             silent: false,
         })
     }
@@ -314,6 +341,17 @@ impl Notification {
         Ok(self)
     }
 
+    /// Makes this notification run the given command when clicked.
+    pub fn command<C: TryInto<Command>>(mut self, cmd: C) -> Result<Self, NotificationCommandError<C>>
+    where C::Error: std::error::Error {
+        if build_ge!(self.swiftbar, 402) {
+            self.command = Some(cmd.try_into().map_err(NotificationCommandError::Command)?);
+            Ok(self)
+        } else {
+            Err(NotificationCommandError::UnsupportedSwiftBarVersion)
+        }
+    }
+
     /// Disables sound for this notification.
     pub fn silent(mut self) -> Self {
         self.silent = true;
@@ -334,12 +372,17 @@ impl IntoUrl for Notification {
 
 impl<'a> IntoUrl for &'a Notification {
     fn into_url(self) -> Result<Url, url::ParseError> {
-        Url::parse_with_params("swiftbar://notify", iter::once(("plugin", &*self.plugin_name))
-            .chain(self.title.as_deref().map(|title| ("title", title)))
-            .chain(self.subtitle.as_deref().map(|subtitle| ("subtitle", subtitle)))
-            .chain(self.body.as_deref().map(|body| ("body", body)))
-            .chain(self.href.as_ref().map(|href| ("href", href.as_str())))
-            .chain(self.silent.then(|| ("silent", "true")))
+        let Notification { swiftbar: _, plugin_name, title, subtitle, body, command, href, silent } = self;
+        Url::parse_with_params("swiftbar://notify", iter::once((Cow::Borrowed("plugin"), &**plugin_name))
+            .chain(title.as_deref().map(|title| (Cow::Borrowed("title"), title)))
+            .chain(subtitle.as_deref().map(|subtitle| (Cow::Borrowed("subtitle"), subtitle)))
+            .chain(body.as_deref().map(|body| (Cow::Borrowed("body"), body)))
+            .chain(command.iter().flat_map(|command| iter::once((Cow::Borrowed("bash"), &*command.params.cmd))
+                .chain(command.params.params.iter().enumerate().map(|(n, arg)| (Cow::Owned(format!("param{}", n + 1)), &**arg)))
+                .chain((!command.terminal).then(|| (Cow::Borrowed("terminal"), "false")))
+            ))
+            .chain(href.as_ref().map(|href| (Cow::Borrowed("href"), href.as_str())))
+            .chain(silent.then(|| (Cow::Borrowed("silent"), "true")))
         )
     }
 }

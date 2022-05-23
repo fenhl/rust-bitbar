@@ -59,7 +59,7 @@ pub fn command(args: TokenStream, item: TokenStream) -> TokenStream {
     let (wrapper_body, command_params, command_args) = if varargs {
         (
             quote!(::bitbar::CommandOutput::report(#command_name(args)#awaitness, #command_name_str)),
-            quote!(args),
+            quote!(::std::iter::Iterator::collect(::std::iter::Iterator::chain(::std::iter::once(::std::string::ToString::to_string(#command_name_str)), args))),
             quote!(_: ::bitbar::flavor::SwiftBar, args: ::std::vec::Vec<::std::string::String>),
         )
     } else {
@@ -108,7 +108,10 @@ pub fn command(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
             },
-            quote!(vec![#(#command_params),*]),
+            quote!(::std::vec![
+                ::std::string::ToString::to_string(#command_name_str),
+                #(#command_params,)*
+            ]),
             quote!(#(#command_args),*),
         )
     };

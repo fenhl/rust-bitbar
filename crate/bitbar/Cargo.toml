@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.7.3"
+version = "0.7.4"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2018"
 description = "Helper library for writing BitBar plugins"
@@ -36,7 +36,7 @@ optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.7.3"
+version = "=0.7.4"
 
 [dependencies.css-colors]
 version = "1"

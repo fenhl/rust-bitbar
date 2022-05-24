@@ -30,7 +30,7 @@ use {
     },
 };
 #[cfg(feature = "assume-flavor")] use static_assertions::const_assert;
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))] use {
+#[cfg(feature = "tokio")] use {
     std::pin::Pin,
     futures::{
         future::Future,
@@ -429,8 +429,8 @@ impl<'a, I: MainOutput> MainOutput for BlockingStream<'a, I> {
     }
 }
 
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+#[cfg(feature = "tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 /// A type that [streams](https://github.com/swiftbar/SwiftBar#streamable) menus from a stream (async iterator).
 ///
 /// Note that the following [plugin metadata](https://github.com/swiftbar/SwiftBar#script-metadata) items must be set for this to work:
@@ -450,8 +450,8 @@ pub struct Stream<'a, I: AsyncMainOutput<'a> + 'a> {
     inner: Pin<Box<dyn futures::stream::Stream<Item = I> + 'a>>,
 }
 
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+#[cfg(feature = "tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 impl<'a, I: AsyncMainOutput<'a> + 'a> Stream<'a, I> {
     #[allow(missing_docs)]
     pub fn new(swiftbar: SwiftBar, stream: impl futures::stream::Stream<Item = I> + 'a) -> Self {
@@ -459,8 +459,8 @@ impl<'a, I: AsyncMainOutput<'a> + 'a> Stream<'a, I> {
     }
 }
 
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+#[cfg(feature = "tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 impl<'a, I: AsyncMainOutput<'a> + 'a> AsyncMainOutput<'a> for Stream<'a, I> {
     fn main_output(mut self, error_template_image: Option<Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>> {
         if build_ge!(self.swiftbar, 399) {

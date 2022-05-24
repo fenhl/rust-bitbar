@@ -18,10 +18,11 @@ use {
 };
 #[cfg(feature = "url1")] use url1::Url as Url1;
 #[cfg(all(feature = "base64", feature = "image"))] use {
+    std::io::Cursor,
     image::{
         DynamicImage,
         ImageError,
-        ImageOutputFormat::PNG,
+        ImageOutputFormat::Png,
         ImageResult,
     },
 };
@@ -332,8 +333,8 @@ impl TryFrom<DynamicImage> for Image {
     type Error = ImageError;
 
     fn try_from(img: DynamicImage) -> ImageResult<Image> {
-        let mut buf = Vec::default();
-        img.write_to(&mut buf, PNG)?;
-        Ok(Image::from(&buf))
+        let mut buf = Cursor::<Vec<_>>::default();
+        img.write_to(&mut buf, Png)?;
+        Ok(Image::from(buf.into_inner()))
     }
 }

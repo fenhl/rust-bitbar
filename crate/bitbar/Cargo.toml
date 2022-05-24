@@ -1,6 +1,6 @@
 [package]
 name = "bitbar"
-version = "0.7.4"
+version = "0.8.0"
 authors = ["Fenhl <fenhl@fenhl.net>"]
 edition = "2021"
 description = "Helper library for writing BitBar plugins"
@@ -10,20 +10,17 @@ repository = "https://github.com/fenhl/rust-bitbar"
 keywords = ["plugin", "macos", "menu-bar", "swiftbar", "xbar"]
 
 [package.metadata.docs.rs]
-features = ["assume-flavor", "base64", "css-colors", "image", "serenity", "tokio", "url1"]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["tokio"]
 assume-flavor = ["static_assertions"]
-tokio = ["dep_tokio", "futures", "bitbar-derive/tokio"]
-tokio02 = ["dep_tokio02", "futures", "bitbar-derive/tokio02"]
-tokio03 = ["dep_tokio03", "futures", "bitbar-derive/tokio"]
+tokio = ["dep:tokio", "futures", "bitbar-derive/tokio"]
 
 [dependencies]
 css-color-parser = "0.1.2"
-inventory = "0.1" # used in proc macro
-notify-rust = "3" # used in proc macro
+notify-rust = "4" # used in proc macro
 open = "2"
 semver = "1"
 structopt = "0.3" # used in proc macro
@@ -31,12 +28,12 @@ thiserror = "1"
 url = "2"
 
 [dependencies.base64]
-version = "0.11"
+version = "0.13"
 optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.7.4"
+version = "=0.8.0"
 
 [dependencies.css-colors]
 version = "1"
@@ -47,11 +44,11 @@ version = "0.3"
 optional = true
 
 [dependencies.image]
-version = "0.22.2"
+version = "0.24"
 optional = true
 
 [dependencies.serenity]
-version = "0.10"
+version = "0.11"
 default-features = false
 features = [
     "model", "rustls_backend", #TODO remove once https://github.com/serenity-rs/serenity/issues/763 is fixed
@@ -63,25 +60,7 @@ optional = true
 version = "1"
 optional = true
 
-[dependencies.dep_tokio] # used in proc macro
-package = "tokio"
+[dependencies.tokio] # used in proc macro
 version = "1"
 features = ["macros", "rt-multi-thread"]
-optional = true
-
-[dependencies.dep_tokio02]
-package = "tokio"
-version = "0.2"
-features = ["macros", "rt-threaded"]
-optional = true
-
-[dependencies.dep_tokio03]
-package = "tokio"
-version = "0.3"
-features = ["macros", "rt-multi-thread"]
-optional = true
-
-[dependencies.url1]
-package = "url"
-version = "1"
 optional = true

@@ -55,7 +55,7 @@ use {
     },
     url::Url,
 };
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))] use std::{
+#[cfg(feature = "tokio")] use std::{
     future::Future,
     pin::Pin,
 };
@@ -68,13 +68,10 @@ pub use {
     crate::flavor::Flavor,
 };
 #[doc(hidden)] pub use { // used in proc macro
-    inventory,
     notify_rust,
     structopt,
 };
-#[cfg(feature = "tokio")] #[doc(hidden)] pub use dep_tokio as tokio;
-#[cfg(feature = "tokio02")] #[doc(hidden)] pub use dep_tokio02 as tokio;
-#[cfg(feature = "tokio03")] #[doc(hidden)] pub use dep_tokio03 as tokio;
+#[cfg(feature = "tokio")] #[doc(hidden)] pub use tokio;
 
 pub mod attr;
 pub mod flavor;
@@ -362,16 +359,16 @@ impl<T: MainOutput, E: MainOutput> MainOutput for Result<T, E> {
     }
 }
 
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+#[cfg(feature = "tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 /// Members of this trait can be returned from a main function annotated with [`main`].
 pub trait AsyncMainOutput<'a> {
     /// Displays this value as a menu, using the given template image in case of an error.
     fn main_output(self, error_template_image: Option<attr::Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>>;
 }
 
-#[cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "tokio", feature = "tokio02", feature = "tokio03"))))]
+#[cfg(feature = "tokio")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 impl<'a, T: MainOutput + 'a> AsyncMainOutput<'a> for T {
     fn main_output(self, error_template_image: Option<attr::Image>) -> Pin<Box<dyn Future<Output = ()> + 'a>> {
         Box::pin(async move {

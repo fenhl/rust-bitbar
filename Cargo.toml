@@ -2,3 +2,7 @@
 members = ["crate/*"]
 default-members = ["crate/bitbar"]
 resolver = "2"
+
+[profile.release]
+lto = true
+strip = true

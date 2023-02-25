@@ -109,6 +109,11 @@ impl SwiftBar {
     pub fn sf_image(&self, item: &mut ContentItem, image: impl ToString) {
         Attrs::for_item(item).sf_image = Some(image.to_string());
     }
+
+    /// Adds a checkmark to a menu item.
+    pub fn checked(&self, item: &mut ContentItem) {
+        Attrs::for_item(item).checked = true;
+    }
 }
 
 /// A type that can be used as `bash=` command parameters for SwiftBar, which unlike BitBar supports more than five parameters.
@@ -193,12 +198,16 @@ impl<T: ToString> IntoParams for Vec<T> {
 /// Flavor-specific [`ContentItem`] attributes.
 #[derive(Debug)]
 pub struct Attrs {
+    checked: bool,
     sf_image: Option<String>,
 }
 
 impl Attrs {
     fn for_item(item: &mut ContentItem) -> &mut Attrs {
-        match item.flavor_attrs.get_or_insert(super::Attrs::SwiftBar(Attrs { sf_image: None })) {
+        match item.flavor_attrs.get_or_insert_with(|| super::Attrs::SwiftBar(Attrs {
+            checked: false,
+            sf_image: None,
+        })) {
             super::Attrs::SwiftBar(ref mut params) => params,
         }
     }

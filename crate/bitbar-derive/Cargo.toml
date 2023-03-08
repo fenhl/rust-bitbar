@@ -1,12 +1,12 @@
 [package]
 name = "bitbar-derive"
-version = "0.8.1"
-authors = ["Fenhl <fenhl@fenhl.net>"]
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 description = "Proc-macros for the bitbar crate"
 license = "MIT"
 readme = "../../README.md"
-repository = "https://github.com/fenhl/rust-bitbar"
+repository.workspace = true
 
 [lib]
 proc-macro = true

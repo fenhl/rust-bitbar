@@ -1,12 +1,12 @@
 [package]
 name = "bitbar"
-version = "0.8.1"
-authors = ["Fenhl <fenhl@fenhl.net>"]
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 description = "Helper library for writing BitBar plugins"
 license = "MIT"
 readme = "../../README.md"
-repository = "https://github.com/fenhl/rust-bitbar"
+repository.workspace = true
 keywords = ["plugin", "macos", "menu-bar", "swiftbar", "xbar"]
 
 [package.metadata.docs.rs]
@@ -33,7 +33,7 @@ optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.8.1"
+version = "=0.8.2"
 
 [dependencies.css-colors]
 version = "1"

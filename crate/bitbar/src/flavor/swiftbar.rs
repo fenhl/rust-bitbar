@@ -213,6 +213,9 @@ impl Attrs {
     }
 
     pub(crate) fn render<'a>(&'a self, rendered_params: &mut BTreeMap<Cow<'a, str>, Cow<'a, str>>) {
+        if self.checked {
+            rendered_params.insert(Cow::Borrowed("checked"), Cow::Borrowed("true"));
+        }
         if let Some(ref sf_image) = self.sf_image {
             rendered_params.insert(Cow::Borrowed("sfimage"), Cow::Borrowed(sf_image));
         }

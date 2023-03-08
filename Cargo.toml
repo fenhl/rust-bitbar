@@ -3,6 +3,12 @@ members = ["crate/*"]
 default-members = ["crate/bitbar"]
 resolver = "2"
 
+[workspace.package]
+version = "0.8.2"
+authors = ["Fenhl <fenhl@fenhl.net>"]
+edition = "2021"
+repository = "https://github.com/fenhl/rust-bitbar"
+
 [profile.release]
 lto = true
 strip = true

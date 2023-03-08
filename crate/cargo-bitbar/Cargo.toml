@@ -1,12 +1,12 @@
 [package]
 name = "cargo-bitbar"
 version = "0.1.1"
-authors = ["Fenhl <fenhl@fenhl.net>"]
-edition = "2018"
+authors.workspace = true
+edition.workspace = true
 description = "Cargo subcommand for the bitbar crate"
 license = "MIT"
 readme = "../../README.md"
-repository = "https://github.com/fenhl/rust-bitbar"
+repository.workspace = true
 
 [dependencies]
 anyhow = "1"

@@ -16,6 +16,10 @@ use {
         Menu,
     },
 };
+#[cfg(feature = "base64")] use base64::{
+    Engine as _,
+    engine::general_purpose::STANDARD as BASE64,
+};
 #[cfg(feature = "url1")] use url1::Url as Url1;
 #[cfg(all(feature = "base64", feature = "image"))] use {
     std::io::Cursor,
@@ -309,7 +313,7 @@ impl From<String> for Image {
 impl From<Vec<u8>> for Image {
     fn from(input: Vec<u8>) -> Image {
         Image {
-            base64_data: base64::encode(&input),
+            base64_data: BASE64.encode(&input),
             is_template: false,
         }
     }
@@ -321,7 +325,7 @@ impl From<Vec<u8>> for Image {
 impl<T: ?Sized + AsRef<[u8]>> From<&T> for Image {
     fn from(input: &T) -> Image {
         Image {
-            base64_data: base64::encode(input),
+            base64_data: BASE64.encode(input),
             is_template: false,
         }
     }

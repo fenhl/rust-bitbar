@@ -11,6 +11,7 @@
 )]
 
 use {
+    itertools::Itertools as _,
     proc_macro::TokenStream,
     proc_macro2::Span,
     quote::{
@@ -19,6 +20,7 @@ use {
     },
     syn::{
         *,
+        punctuated::Punctuated,
         spanned::Spanned as _,
     },
 };
@@ -34,10 +36,10 @@ use {
 /// The function must also be registered via `#[bitbar::main(commands(...))]`.
 #[proc_macro_attribute]
 pub fn command(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as AttributeArgs);
-    let varargs = match &args[..] {
-        [] => false,
-        [NestedMeta::Meta(Meta::Path(path))] if path.is_ident("varargs") => true,
+    let args = parse_macro_input!(args with Punctuated::<Meta, Token![,]>::parse_terminated);
+    let varargs = match args.into_iter().at_most_one() {
+        Ok(None) => false,
+        Ok(Some(arg)) if arg.path().is_ident("varargs") => true,
         _ => return quote!(compile_error!("unexpected bitbar::command arguments");).into(),
     };
     let command_fn = parse_macro_input!(item as ItemFn);
@@ -172,80 +174,58 @@ pub fn fallback_command(_: TokenStream, item: TokenStream) -> TokenStream {
 /// * `error_template_image` can be set to a path (relative to the current file) to a PNG file which will be used as the template image for the menu when displaying an error.
 #[proc_macro_attribute]
 pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as AttributeArgs);
+    let args = parse_macro_input!(args with Punctuated::<Meta, Token![,]>::parse_terminated);
     let mut error_template_image = quote!(::core::option::Option::None);
     let mut fallback_lit = None;
     let mut subcommand_names = Vec::default();
     let mut subcommand_fns = Vec::default();
     for arg in args {
-        match arg {
-            NestedMeta::Meta(arg) => if let Some(ident) = arg.path().get_ident() {
-                match &*ident.to_string() {
-                    "commands" => match arg {
-                        Meta::List(MetaList { nested, .. }) => for cmd in nested {
-                            match cmd {
-                                NestedMeta::Meta(Meta::Path(path)) if path.get_ident().is_some() => {
-                                    let ident = path.get_ident().expect("just checked");
-                                    subcommand_names.push(ident.to_string());
-                                    subcommand_fns.push(Ident::new(&format!("bitbar_{ident}_wrapper"), ident.span()));
-                                }
-                                NestedMeta::Meta(_) => return quote_spanned! {cmd.span()=>
+        if arg.path().is_ident("commands") {
+            match arg.require_list() {
+                Ok(list) => match list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                    Ok(nested) => for cmd in nested {
+                        match cmd.require_path_only() {
+                            Ok(path) => if let Some(ident) = path.get_ident() {
+                                subcommand_names.push(ident.to_string());
+                                subcommand_fns.push(Ident::new(&format!("bitbar_{ident}_wrapper"), ident.span()));
+                            } else {
+                                return quote_spanned! {cmd.span()=>
                                     compile_error!("bitbar subcommands must be simple identifiers");
-                                }.into(),
-                                NestedMeta::Lit(_) => return quote_spanned! {cmd.span()=>
-                                    compile_error!("bitbar subcommands must be identifiers, not literals"); //TODO if it's a string literal, suggest removing the quotes
-                                }.into(),
-                            }
-                        },
-                        Meta::NameValue(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("use `commands(...)` instead of `commands = ...`");
-                        }.into(),
-                        Meta::Path(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("missing commands list, use `commands(...)`");
-                        }.into(),
+                                }.into()
+                            },
+                            Err(e) => return e.into_compile_error().into(),
+                        }
                     },
-                    "error_template_image" => match arg {
-                        Meta::List(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("use `error_template_image = \"...\"` instead of `error_template_image(...)`");
-                        }.into(),
-                        Meta::NameValue(MetaNameValue { lit, .. }) => if let Lit::Str(lit) = lit {
-                            error_template_image = quote!(::core::option::Option::Some(::bitbar::attr::Image::from(&include_bytes!(#lit)[..])));
-                        } else {
-                            return quote_spanned! {lit.span()=>
-                                compile_error!("error_template_image value must be a string literal");
-                            }.into()
-                        },
-                        Meta::Path(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("missing value, use `error_template_image = \"...\"`");
-                        }.into(),
-                    }
-                    "fallback_command" => match arg {
-                        Meta::List(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("use `fallback_command = \"...\"` instead of `fallback_command(...)`");
-                        }.into(),
-                        Meta::NameValue(MetaNameValue { lit, .. }) => if let Lit::Str(lit) = lit {
-                            fallback_lit = Some(Ident::new(&format!("bitbar_{}_wrapper", lit.value()), lit.span()));
-                        } else {
-                            return quote_spanned! {lit.span()=>
-                                compile_error!("fallback_command value must be a string literal");
-                            }.into()
-                        },
-                        Meta::Path(_) => return quote_spanned! {arg.span()=>
-                            compile_error!("missing value, use `fallback_command = \"...\"`");
-                        }.into(),
-                    },
-                    _ => return quote_spanned! {arg.span()=>
-                        compile_error!("unexpected bitbar::main attribute argument");
-                    }.into(),
+                    Err(e) => return e.into_compile_error().into(),
                 }
-            } else {
-                return quote_spanned! {arg.span()=>
-                    compile_error!("unexpected bitbar::main attribute argument");
-                }.into()
-            },
-            NestedMeta::Lit(_) => return quote_spanned! {arg.span()=>
-                compile_error!("bitbar::main attribute arguments must be identifiers, not literals"); //TODO if it's a string literal, suggest removing the quotes
-            }.into(),
+                Err(e) => return e.into_compile_error().into(),
+            }
+        } else if arg.path().is_ident("error_template_image") {
+            match arg.require_name_value() {
+                Ok(MetaNameValue { value, .. }) => if let Expr::Lit(ExprLit { lit: Lit::Str(lit), .. }) = value {
+                    error_template_image = quote!(::core::option::Option::Some(::bitbar::attr::Image::from(&include_bytes!(#lit)[..])));
+                } else {
+                    return quote_spanned! {value.span()=>
+                        compile_error!("error_template_image value must be a string literal");
+                    }.into()
+                },
+                Err(e) => return e.into_compile_error().into(),
+            }
+        } else if arg.path().is_ident("fallback_command") {
+            match arg.require_name_value() {
+                Ok(MetaNameValue { value, .. }) => if let Expr::Lit(ExprLit { lit: Lit::Str(lit), .. }) = value {
+                    fallback_lit = Some(Ident::new(&format!("bitbar_{}_wrapper", lit.value()), lit.span()));
+                } else {
+                    return quote_spanned! {value.span()=>
+                        compile_error!("fallback_command value must be a string literal");
+                    }.into()
+                },
+                Err(e) => return e.into_compile_error().into(),
+            }
+        } else {
+            return quote_spanned! {arg.span()=>
+                compile_error!("unexpected bitbar::main attribute argument");
+            }.into()
         }
     }
     let main_fn = parse_macro_input!(item as ItemFn);

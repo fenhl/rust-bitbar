@@ -20,15 +20,14 @@ tokio = ["dep:tokio", "futures", "bitbar-derive/tokio"]
 
 [dependencies]
 css-color-parser = "0.1.2"
-notify-rust = "4" # used in proc macro
-open = "2"
+notify-rust = "4"
+open = "5"
 semver = "1"
-structopt = "0.3" # used in proc macro
 thiserror = "1"
 url = "2"
 
 [dependencies.base64]
-version = "0.13"
+version = "0.21"
 optional = true
 
 [dependencies.bitbar-derive]

@@ -12,9 +12,9 @@ use {
         MetadataCommand,
         Package,
     },
+    clap::Parser as _,
     itertools::Itertools as _,
     serde::Deserialize,
-    structopt::StructOpt,
 };
 
 #[derive(Deserialize)]
@@ -79,7 +79,7 @@ struct BitBarMetadata {
 impl BitBarMetadata {
     fn format(self, package: Option<&Package>) -> Result<Vec<u8>> {
         let Self { title, version, author, author_github, desc, image, dependencies, abouturl, hide_about, hide_run_in_terminal, hide_last_updated, hide_disable_plugin, hide_swiftbar, schedule, refresh_on_open, run_in_bash, kind, environment } = self;
-        let mut buf = base64::write::EncoderWriter::new(Vec::default(), base64::Config::new(base64::CharacterSet::Standard, true));
+        let mut buf = base64::write::EncoderWriter::new(Vec::default(), &base64::engine::general_purpose::STANDARD);
 
         macro_rules! double_option {
             ($field:ident, $fallback:expr) => {
@@ -133,26 +133,26 @@ impl BitBarMetadata {
     }
 }
 
-#[derive(StructOpt)]
+#[derive(clap::Parser)]
 enum Args {
+    #[clap(subcommand)]
     Bitbar(ArgsInner),
 }
 
-#[derive(StructOpt)]
+#[derive(clap::Subcommand)]
 enum ArgsInner {
     /// Read plugin metadata from Cargo.toml and encode it into the given binary.
     Meta {
         /// The path to the Cargo manifest for the package.
-        #[structopt(long, parse(from_os_str))]
+        #[clap(long)]
         manifest: Option<PathBuf>,
         /// The path to the binary that should be edited.
-        #[structopt(parse(from_os_str))]
         exe_path: PathBuf,
     },
 }
 
-#[paw::main]
-fn main(Args::Bitbar(args): Args) -> Result<()> {
+fn main() -> Result<()> {
+    let Args::Bitbar(args) = Args::parse();
     match args {
         ArgsInner::Meta { manifest, exe_path } => {
             let mut metadata_cmd = MetadataCommand::new();

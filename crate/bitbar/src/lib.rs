@@ -67,10 +67,6 @@ pub use {
     },
     crate::flavor::Flavor,
 };
-#[doc(hidden)] pub use { // used in proc macro
-    notify_rust,
-    structopt,
-};
 #[cfg(feature = "tokio")] #[doc(hidden)] pub use tokio;
 
 pub mod attr;

@@ -383,12 +383,12 @@ impl CommandOutput for () {
     fn report(self, _: &str) {}
 }
 
-impl<T: CommandOutput, E: fmt::Display> CommandOutput for Result<T, E> {
+impl<T: CommandOutput, E: fmt::Debug + fmt::Display> CommandOutput for Result<T, E> {
     fn report(self, cmd_name: &str) {
         match self {
             Ok(x) => x.report(cmd_name),
             Err(e) => {
-                notify(format!("{}: {}", cmd_name, e));
+                notify_error(&format!("{}: {}", cmd_name, e), &format!("{e:?}"));
                 process::exit(1);
             }
         }
@@ -396,10 +396,19 @@ impl<T: CommandOutput, E: fmt::Display> CommandOutput for Result<T, E> {
 }
 
 #[doc(hidden)] pub fn notify(body: impl fmt::Display) { // used in proc macro
-    //let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar")); //TODO uncomment when https://github.com/h4llow3En/mac-notification-sys/issues/8 is fixed
+    let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
     let _ = notify_rust::Notification::default()
         .summary(&env!("CARGO_PKG_NAME"))
         .sound_name("Funky")
         .body(&body.to_string())
+        .show();
+}
+
+fn notify_error(display: &str, debug: &str) {
+    let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
+    let _ = notify_rust::Notification::default()
+        .summary(display)
+        .sound_name("Funky")
+        .body(&format!("debug: {debug}"))
         .show();
 }

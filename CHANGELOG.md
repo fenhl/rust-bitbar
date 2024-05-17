@@ -1,3 +1,28 @@
+# 0.9.0
+
+* Improved error notifications for subcommands
+* **Breaking:** The `CommandOutput` implementation requires the error type to implement `Debug`
+
+# 0.8.2
+
+* Fix `SwiftBar::checked` not doing anything
+
+# 0.8.1
+
+* New `SwiftBar::checked` method
+
+# 0.8.0
+
+* **Breaking:** A command declared using `#[bitbar::command]` must also be registered via `#[bitbar::main(commands(...))]`
+* **Breaking:** A fallback command declared using `#[bitbar::fallback_command]` must also be registered via `#[bitbar::main(fallback_command = "...")]`
+* **Breaking:** The `tokio02` and `tokio03` features have been removed
+* **Breaking:** Upgraded the optional `image` dependency from 0.22 to 0.24
+* **Breaking:** Upgraded the optional `serenity` dependency from 0.10 to 0.11
+
+# 0.7.3
+
+* New `swiftbar::Notification::command` method
+
 # 0.7.2
 
 * New `SwiftBar::plugin_name` method

@@ -20,7 +20,6 @@ use {
     Engine as _,
     engine::general_purpose::STANDARD as BASE64,
 };
-#[cfg(feature = "url1")] use url1::Url as Url1;
 #[cfg(all(feature = "base64", feature = "image"))] use {
     std::io::Cursor,
     image::{
@@ -144,14 +143,6 @@ impl IntoUrl for String {
 impl<'a> IntoUrl for &'a str {
     fn into_url(self) -> Result<Url, url::ParseError> {
         Url::parse(self)
-    }
-}
-
-#[cfg(feature = "url1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "url1")))]
-impl IntoUrl for Url1 {
-    fn into_url(self) -> Result<Url, url::ParseError> {
-        Url::parse(self.as_str())
     }
 }
 

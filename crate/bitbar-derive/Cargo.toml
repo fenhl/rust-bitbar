@@ -15,7 +15,7 @@ proc-macro = true
 tokio = []
 
 [dependencies]
-itertools = "0.11"
+itertools = "0.12"
 proc-macro2 = "1"
 quote = "1"
 

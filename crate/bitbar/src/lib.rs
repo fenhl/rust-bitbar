@@ -53,6 +53,7 @@ use {
         process,
         vec,
     },
+    if_chain::if_chain,
     url::Url,
 };
 #[cfg(feature = "tokio")] use std::{
@@ -396,19 +397,42 @@ impl<T: CommandOutput, E: fmt::Debug + fmt::Display> CommandOutput for Result<T,
 }
 
 #[doc(hidden)] pub fn notify(body: impl fmt::Display) { // used in proc macro
-    let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
-    let _ = notify_rust::Notification::default()
-        .summary(&env!("CARGO_PKG_NAME"))
-        .sound_name("Funky")
-        .body(&body.to_string())
-        .show();
+    if_chain! {
+        if let Flavor::SwiftBar(swiftbar) = Flavor::check();
+        if let Ok(notification) = flavor::swiftbar::Notification::new(swiftbar);
+        then {
+            let _ = notification
+                .title(env!("CARGO_PKG_NAME"))
+                .body(body.to_string())
+                .send();
+        } else {
+            let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
+            let _ = notify_rust::Notification::default()
+                .summary(&env!("CARGO_PKG_NAME"))
+                .sound_name("Funky")
+                .body(&body.to_string())
+                .show();
+        }
+    }
 }
 
 fn notify_error(display: &str, debug: &str) {
-    let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
-    let _ = notify_rust::Notification::default()
-        .summary(display)
-        .sound_name("Funky")
-        .body(&format!("debug: {debug}"))
-        .show();
+    if_chain! {
+        if let Flavor::SwiftBar(swiftbar) = Flavor::check();
+        if let Ok(notification) = flavor::swiftbar::Notification::new(swiftbar);
+        then {
+            let _ = notification
+                .title(env!("CARGO_PKG_NAME"))
+                .subtitle(display)
+                .body(format!("debug: {debug}"))
+                .send();
+        } else {
+            let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
+            let _ = notify_rust::Notification::default()
+                .summary(display)
+                .sound_name("Funky")
+                .body(&format!("debug: {debug}"))
+                .show();
+        }
+    }
 }

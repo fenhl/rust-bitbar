@@ -406,12 +406,17 @@ impl<T: CommandOutput, E: fmt::Debug + fmt::Display> CommandOutput for Result<T,
                 .body(body.to_string())
                 .send();
         } else {
-            let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
-            let _ = notify_rust::Notification::default()
-                .summary(&env!("CARGO_PKG_NAME"))
-                .sound_name("Funky")
-                .body(&body.to_string())
-                .show();
+            #[cfg(target_os = "macos")] {
+                let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
+                let _ = notify_rust::Notification::default()
+                    .summary(&env!("CARGO_PKG_NAME"))
+                    .sound_name("Funky")
+                    .body(&body.to_string())
+                    .show();
+            }
+            #[cfg(not(target_os = "macos"))] {
+                eprintln!("{body}");
+            }
         }
     }
 }
@@ -427,12 +432,18 @@ fn notify_error(display: &str, debug: &str) {
                 .body(format!("debug: {debug}"))
                 .send();
         } else {
-            let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
-            let _ = notify_rust::Notification::default()
-                .summary(display)
-                .sound_name("Funky")
-                .body(&format!("debug: {debug}"))
-                .show();
+            #[cfg(target_os = "macos")] {
+                let _ = notify_rust::set_application(&notify_rust::get_bundle_identifier_or_default("BitBar"));
+                let _ = notify_rust::Notification::default()
+                    .summary(display)
+                    .sound_name("Funky")
+                    .body(&format!("debug: {debug}"))
+                    .show();
+            }
+            #[cfg(not(target_os = "macos"))] {
+                eprintln!("{display}");
+                eprintln!("debug: {debug}");
+            }
         }
     }
 }

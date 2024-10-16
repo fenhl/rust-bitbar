@@ -32,7 +32,7 @@ optional = true
 
 [dependencies.bitbar-derive]
 path = "../bitbar-derive"
-version = "=0.10.0"
+version = "=0.10.1"
 
 [dependencies.css-colors]
 version = "1"

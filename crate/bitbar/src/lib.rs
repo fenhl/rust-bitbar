@@ -421,7 +421,7 @@ impl<T: CommandOutput, E: fmt::Debug + fmt::Display> CommandOutput for Result<T,
     }
 }
 
-fn notify_error(display: &str, debug: &str) {
+#[doc(hidden)] pub fn notify_error(display: &str, debug: &str) { // used in proc macro
     if_chain! {
         if let Flavor::SwiftBar(swiftbar) = Flavor::check();
         if let Ok(notification) = flavor::swiftbar::Notification::new(swiftbar);

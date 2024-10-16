@@ -1,3 +1,7 @@
+# 0.10.1
+
+* Fix a compile error caused by the function used internally for error notifications being private.
+
 # 0.10.0
 
 * **Breaking:** Errors from parsing command parameters must now implement `Debug` in addition to `Display`. The `Debug` representation is now included in the error notification along with some error context.

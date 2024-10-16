@@ -1,3 +1,15 @@
+# 0.10.0
+
+* **Breaking:** Errors from parsing command parameters must now implement `Debug` in addition to `Display`. The `Debug` representation is now included in the error notification along with some error context.
+
+# 0.9.2
+
+* The `bitbar` crate can now be compiled for other platforms for debugging purposes. System notifications will be replaced with printing to stderr when not compiling for macOS.
+
+# 0.9.1
+
+* Internally generated notifications now use SwiftBar's notification system when available, instead of the `notify-rust` crate.
+
 # 0.9.0
 
 * Improved error notifications for subcommands

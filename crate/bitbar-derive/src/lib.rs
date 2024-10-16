@@ -27,7 +27,7 @@ use {
 
 /// Registers a subcommand that you can run from a menu item's `command`.
 ///
-/// Commands may take any number of parameters implementing `FromStr` (with errors implementing `Display`) and `ToString`, and should return `Result<(), Error>`, where `Error` is any type that implements `Display`. If a command errors, `bitbar` will attempt to send a macOS notification containing the error message.
+/// Commands may take any number of parameters implementing `FromStr` (with errors implementing `Debug` and `Display`) and `ToString`, and should return `Result<(), Error>`, where `Error` is any type that implements `Display`. If a command errors, `bitbar` will attempt to send a macOS notification containing the error message.
 ///
 /// Alternatively, use this arrtibute as `#[command(varargs)]` and define the command function with a single parameter of type `Vec<String>`.
 ///
@@ -74,7 +74,10 @@ pub fn command(args: TokenStream, item: TokenStream) -> TokenStream {
                         match #ident.parse() {
                             ::core::result::Result::Ok(arg) => arg,
                             ::core::result::Result::Err(e) => {
-                                ::bitbar::notify(e);
+                                ::bitbar::notify_error(
+                                    &::std::format!("{}: error parsing parameter {}: {}", #command_name_str, #arg_idx, e),
+                                    &::std::format!("{e:?}"),
+                                );
                                 ::std::process::exit(1)
                             }
                         }
